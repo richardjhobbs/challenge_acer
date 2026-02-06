@@ -54,7 +54,7 @@ h1{ margin:0; font-size: 22px; letter-spacing:.2px; }
 }
 
 .controls{
-  display:flex; gap:12px; flex-wrap:wrap; align-items:end;
+  display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;
   padding: 14px;
   border-bottom: 1px solid var(--line);
   background: rgba(0,0,0,.08);
@@ -331,7 +331,7 @@ summary{ cursor:pointer; color: var(--text); font-weight: 800; }
 
 .howto b{ color: var(--text); }
 
-.rowRight{ margin-left:auto; display:flex; gap:10px; flex-wrap:wrap; align-items:end; }
+.rowRight{ margin-left:auto; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
 
 .smallNote{
   font-size: 12px;
