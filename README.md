@@ -1,24 +1,49 @@
 # Acer Challenge
 
-This repository hosts a standalone HTML build of the Acer Challenge game.
+Acer Challenge is a numbers game where you reveal six tiles, roll a target, and build arithmetic steps to reach the target.
 
-## Local preview
+## Local development
 
-Open `index.html` directly in a browser, or serve it with any static file server.
+```bash
+npm install
+npm run dev
+```
 
-## Hosting notes (Codex + Vercel)
+Open [http://localhost:3000](http://localhost:3000).
 
-- **Static hosting is enough today.** The app is a single HTML file with inlined CSS/JS.
-- **SpeechSynthesis is best-effort.** UK female voice selection varies by device, and speech often requires a user gesture. Keep it tied to button clicks.
-- **Determinism for multiplayer.** Client-side randomness is fine for single-player, but a multiplayer mode should receive a seed from the server so all clients share the same tiles and target.
-- **Timing integrity.** Do not trust client timers for competitive results; validate with server timestamps and accept submissions only within the server window.
-- **Solver cost.** The best-answer solver runs in the browser and may spike on low-end devices; move it server-side or precompute for competitive play.
-- **State machine.** The reveal sequence is an implicit state machine; formalize it (LOBBY, REVEALING, TARGET_ROLLING, READY, RUNNING, FINISHED) to prevent desync.
-- **Realtime needs.** Multiplayer will require a backend (Vercel serverless functions or another service) plus a realtime channel (WebSockets).
+## Production build
 
-## Vercel quick deploy
+```bash
+npm run build
+npm run start
+```
 
-1. Push this repository to GitHub.
-2. In Vercel, import the repo and deploy as a static site.
-3. Set the project root to the repository root; the output is `index.html`.
+## Deploying to Vercel
 
+1. Push the repository to GitHub.
+2. Import the repo in Vercel.
+3. Use the default Next.js build settings (`npm run build`).
+4. Deploy.
+
+No extra configuration is required.
+
+## Speech synthesis support
+
+The solo game uses the browser's `speechSynthesis` voices when available. If no English voice is available, gameplay still works,
+but speech lines are silent. Voice playback only begins after the user clicks "Reveal round" or after the timer starts.
+
+## Next steps for multiplayer
+
+- Introduce server-issued seeds to drive RNG for tile and target generation.
+- Sync round payloads (tiles, target, seed) over WebSockets.
+- Add server-side validation for submitted steps and scoring.
+
+## Manual QA checklist
+
+- Reveal flow works (tiles flip, target rolls, target locks).
+- Voices only speak after clicking the reveal button.
+- Timer starts only when "Start timer" is pressed.
+- Tile operations enforce rules and errors.
+- Lock-in works and scores are recorded.
+- History persists across reloads.
+- Best answer displays after lock-in or time end.
