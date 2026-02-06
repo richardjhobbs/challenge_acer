@@ -1,0 +1,1190 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Acer Challenge</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --panel:#0f1a33;
+      --line:rgba(255,255,255,.12);
+      --text:#e9eefc;
+      --muted:rgba(233,238,252,.72);
+      --accent:#5aa7ff;
+      --danger:#ff4d6d;
+      --ok:#33d17a;
+
+      --tileBlue1:#1a4e9b;
+      --tileBlue2:#0f3573;
+      --tileBlue3:#0b2b60;
+      --tileBorder:#0a2550;
+
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+
+      --calcBg1:#4a4a4a;
+      --calcBg2:#2f2f2f;
+      --calcBorder:#1e1e1e;
+      --calcDigit:#111;
+      --calcGlow: rgba(255,255,255,.08);
+    }
+
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: radial-gradient(1200px 800px at 20% -10%, #1a2750 0%, rgba(26,39,80,0) 60%),
+                  radial-gradient(1200px 800px at 90% 10%, #0d3a60 0%, rgba(13,58,96,0) 60%),
+                  var(--bg);
+      color: var(--text);
+    }
+
+    .wrap{ max-width: 1100px; margin: 22px auto; padding: 0 16px 32px; }
+
+    .topbar{
+      display:flex; gap:14px; flex-wrap:wrap; align-items:center; justify-content:space-between;
+      margin-bottom: 14px;
+    }
+    h1{ margin:0; font-size: 22px; letter-spacing:.2px; }
+    .muted{ color: var(--muted); font-size: 13px; }
+
+    .stage{
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+
+    .controls{
+      display:flex; gap:12px; flex-wrap:wrap; align-items:end;
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(0,0,0,.08);
+    }
+    label{ display:block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    select, input, button{
+      font: inherit;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      padding: 10px 12px;
+      outline: none;
+    }
+    input[disabled]{ opacity:.7; cursor:not-allowed; }
+    button{
+      cursor:pointer;
+      background: linear-gradient(180deg, rgba(90,167,255,.25), rgba(90,167,255,.12));
+      border-color: rgba(90,167,255,.35);
+    }
+    button:disabled{ opacity:.55; cursor:not-allowed; }
+    .btnGhost{
+      background: rgba(255,255,255,.05);
+      border-color: rgba(255,255,255,.16);
+    }
+    .btnDanger{
+      background: linear-gradient(180deg, rgba(255,77,109,.28), rgba(255,77,109,.14));
+      border-color: rgba(255,77,109,.40);
+    }
+
+    .arena{
+      padding: 16px;
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    .displayRow{
+      display:grid;
+      grid-template-columns: 260px 1fr 260px;
+      gap: 14px;
+      align-items:stretch;
+    }
+    @media (max-width: 900px){
+      .displayRow{ grid-template-columns: 1fr; }
+    }
+
+    .box{
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(0,0,0,.18);
+      padding: 14px;
+      min-height: 112px;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
+    }
+
+    .led{
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: linear-gradient(180deg, #0b0f14, #070a0d);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+      padding: 10px 12px;
+      display:flex; align-items:center; justify-content:center;
+      height: 66px;
+    }
+    .led span{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 34px;
+      letter-spacing: 1px;
+      color: #b8ffb8;
+      text-shadow: 0 0 14px rgba(184,255,184,.35);
+    }
+
+    /* Calculator style target display */
+    .calc{
+      height: 66px;
+      border-radius: 12px;
+      border: 1px solid var(--calcBorder);
+      background: linear-gradient(180deg, var(--calcBg1), var(--calcBg2));
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.06), 0 10px 18px rgba(0,0,0,.25);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap: 10px;
+      padding: 10px 12px;
+    }
+    .calcDigit{
+      width: 44px;
+      height: 46px;
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
+      border: 1px solid rgba(0,0,0,.40);
+      box-shadow: inset 0 0 0 1px var(--calcGlow);
+      display:grid;
+      place-items:center;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 34px;
+      font-weight: 800;
+      color: #101010;
+      text-shadow: 0 1px 0 rgba(255,255,255,.25);
+    }
+    .calcDigit.locked{
+      outline: 2px solid rgba(51,209,122,.85);
+      outline-offset: 2px;
+    }
+
+    .tilesWrap{
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(0,0,0,.12);
+      padding: 14px;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
+    }
+    .tileRow{
+      display:flex; gap: 10px; flex-wrap:wrap; justify-content:center;
+    }
+
+    /* Countdown-style tiles, plus "blank card" flip */
+    .tile{
+      width: 74px;
+      height: 74px;
+      perspective: 800px;
+      user-select:none;
+    }
+    .card{
+      width: 100%;
+      height: 100%;
+      border-radius: 10px;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 500ms ease;
+    }
+    .tile.revealed .card{ transform: rotateY(180deg); }
+
+    .face{
+      position:absolute;
+      inset:0;
+      backface-visibility: hidden;
+      border-radius: 10px;
+      display:grid;
+      place-items:center;
+      box-shadow: 0 10px 18px rgba(0,0,0,.25), inset 0 0 0 2px rgba(255,255,255,.08);
+      border: 2px solid var(--tileBorder);
+    }
+    .front{
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.03));
+      border-color: rgba(0,0,0,.35);
+    }
+    .front::after{
+      content:"";
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.22), rgba(255,255,255,.06));
+      border: 1px solid rgba(0,0,0,.20);
+    }
+
+    .back{
+      transform: rotateY(180deg);
+      background: linear-gradient(180deg, var(--tileBlue1), var(--tileBlue2) 55%, var(--tileBlue3));
+      color: #fff;
+      font-weight: 900;
+      font-size: 28px;
+      text-shadow: 0 2px 0 rgba(0,0,0,.35);
+    }
+
+    .tile button{
+      all: unset;
+      cursor:pointer;
+      width:100%;
+      height:100%;
+      border-radius: 10px;
+      display:grid;
+      place-items:center;
+    }
+    .tile.selected .back{
+      outline: 3px solid rgba(90,167,255,.9);
+      outline-offset: 2px;
+    }
+    .tile.locked .back{
+      outline: 3px solid rgba(51,209,122,.9);
+      outline-offset: 2px;
+    }
+
+    .opsBar{
+      display:flex; gap:10px; flex-wrap:wrap; justify-content:center;
+      margin-top: 12px;
+    }
+    .opBtn{
+      width: 56px; height: 46px;
+      display:grid; place-items:center;
+      font-weight: 900;
+      font-size: 18px;
+      border-radius: 12px;
+    }
+
+    .statusRow{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      align-items:stretch;
+    }
+    @media (max-width: 900px){
+      .statusRow{ grid-template-columns: 1fr; }
+    }
+    .statusBox{
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(0,0,0,.16);
+      padding: 14px;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
+    }
+
+    .workArea{
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.14);
+      background:
+        linear-gradient(90deg, rgba(0,0,0,0) 0, rgba(0,0,0,0) 24px, rgba(0,0,0,.06) 24px, rgba(0,0,0,.06) 25px),
+        linear-gradient(180deg, rgba(0,0,0,0) 0, rgba(0,0,0,0) 24px, rgba(0,0,0,.06) 24px, rgba(0,0,0,.06) 25px),
+        #ffffff;
+      background-size: 25px 25px;
+      color: #111;
+      padding: 10px 12px;
+      min-height: 230px;
+      overflow:auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 13px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+    }
+
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+    .good{ color: var(--ok); }
+    .bad{ color: var(--danger); }
+
+    table{ width:100%; border-collapse: collapse; }
+    th, td{ padding: 10px 8px; border-bottom: 1px solid rgba(255,255,255,.10); font-size: 13px; }
+    th{ color: var(--muted); text-align:left; font-weight: 700; }
+
+    details{
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px 14px;
+      background: rgba(0,0,0,.14);
+    }
+    summary{ cursor:pointer; color: var(--text); font-weight: 800; }
+    .howto{ margin-top: 10px; line-height: 1.55; }
+    .howto b{ color: var(--text); }
+
+    .rowRight{ margin-left:auto; display:flex; gap:10px; flex-wrap:wrap; align-items:end; }
+
+    .smallNote{
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div>
+        <h1>Acer Challenge</h1>
+        <div class="muted">Pick your numbers, reveal the tiles, reveal the target, then start the clock when you are ready.</div>
+      </div>
+      <div class="muted">Voice uses your browser voice list, best effort UK English female.</div>
+    </div>
+
+    <div class="stage">
+      <div class="controls">
+        <div>
+          <label for="largeCount">Large numbers (0–4)</label>
+          <select id="largeCount">
+            <option>0</option><option selected>1</option><option>2</option><option>3</option><option>4</option>
+          </select>
+        </div>
+        <div>
+          <label for="smallCount">Small numbers (auto so total = 6)</label>
+          <input id="smallCount" type="number" value="5" disabled />
+        </div>
+        <div>
+          <label for="timerMode">Timer</label>
+          <select id="timerMode">
+            <option value="30" selected>30 seconds</option>
+            <option value="60">60 seconds</option>
+            <option value="0">Unlimited</option>
+          </select>
+        </div>
+
+        <div class="rowRight">
+          <button id="newRoundBtn">Reveal round</button>
+          <button id="startTimerBtn" class="btnDanger" disabled>Start timer</button>
+          <button id="undoBtn" class="btnGhost" disabled>Undo</button>
+          <button id="resetWorkBtn" class="btnGhost" disabled>Reset work</button>
+          <button id="lockInBtn" class="btnGhost" disabled>Lock in selected tile</button>
+        </div>
+      </div>
+
+      <div class="arena">
+        <div class="displayRow">
+          <div class="box">
+            <div class="muted">Target</div>
+            <div class="calc" aria-label="target display">
+              <div class="calcDigit" id="d1">-</div>
+              <div class="calcDigit" id="d2">-</div>
+              <div class="calcDigit" id="d3">-</div>
+            </div>
+            <div class="smallNote" id="targetHint">Reveal the round to generate a target.</div>
+          </div>
+
+          <div class="tilesWrap">
+            <div class="muted">Tiles</div>
+            <div class="tileRow" id="tiles"></div>
+
+            <div class="opsBar">
+              <button class="opBtn" data-op="+" id="opAdd" disabled>+</button>
+              <button class="opBtn" data-op="-" id="opSub" disabled>-</button>
+              <button class="opBtn" data-op="*" id="opMul" disabled>×</button>
+              <button class="opBtn" data-op="/" id="opDiv" disabled>÷</button>
+            </div>
+
+            <div class="smallNote" style="text-align:center;" id="pickHint">
+              Click “Reveal round” to begin.
+            </div>
+          </div>
+
+          <div class="box">
+            <div class="muted">Time</div>
+            <div class="led"><span id="timeLeft">--</span></div>
+            <div class="smallNote" id="timerHint">Timer does not start automatically.</div>
+          </div>
+        </div>
+
+        <div class="statusRow">
+          <div class="statusBox">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+              <b>Working</b>
+              <span class="muted" id="workMeta"></span>
+            </div>
+            <div style="height:10px"></div>
+            <div class="workArea" id="workArea">No steps yet.</div>
+          </div>
+
+          <div class="statusBox">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+              <b>Round result</b>
+              <span class="muted" id="roundState">Not started</span>
+            </div>
+            <div style="height:10px"></div>
+            <div id="feedback" class="mono"></div>
+            <div style="height:12px"></div>
+            <div style="font-weight:800;">Best answer (computed)</div>
+            <div class="muted">Shown after you lock in, or when time ends.</div>
+            <div style="height:10px"></div>
+            <div id="bestAnswer" class="mono">---</div>
+          </div>
+        </div>
+
+        <div class="statusBox">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+            <b>Your results</b>
+            <button id="clearHistoryBtn" class="btnGhost" type="button">Clear history</button>
+          </div>
+          <div style="height:10px"></div>
+          <div id="history"></div>
+        </div>
+
+        <details>
+          <summary>How to play</summary>
+          <div class="howto muted">
+            <div><b>Pick:</b> choose how many large numbers you want, then click <b>Reveal round</b>.</div>
+            <div><b>Reveal:</b> the six tiles flip over one-by-one, then the target display rolls and locks into a 3-digit number.</div>
+            <div><b>Step mode:</b> select two revealed tiles, pick an operation (+, -, ×, ÷). The result becomes a new tile. Each tile can be used once per step.</div>
+            <div><b>Constraints:</b> intermediate results must be positive integers, division must be exact, no concatenation.</div>
+            <div><b>Timer:</b> when you are ready, press <b>Start timer</b>. Choose 30s, 60s, or Unlimited.</div>
+            <div><b>Finish:</b> select the tile you want as your final answer, then press <b>Lock in selected tile</b>.</div>
+            <div><b>Scoring:</b> exact match 10 points, 1–5 away 7 points, 6–10 away 5 points, otherwise 0.</div>
+          </div>
+        </details>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  // Pools
+  const largePool = [25, 50, 75, 100];
+  const smallPool = [];
+  for (let i = 1; i <= 10; i++) smallPool.push(i, i);
+
+  // Elements
+  const els = {
+    largeCount: document.getElementById('largeCount'),
+    smallCount: document.getElementById('smallCount'),
+    timerMode: document.getElementById('timerMode'),
+    newRoundBtn: document.getElementById('newRoundBtn'),
+    startTimerBtn: document.getElementById('startTimerBtn'),
+    undoBtn: document.getElementById('undoBtn'),
+    resetWorkBtn: document.getElementById('resetWorkBtn'),
+    lockInBtn: document.getElementById('lockInBtn'),
+
+    tiles: document.getElementById('tiles'),
+    opAdd: document.getElementById('opAdd'),
+    opSub: document.getElementById('opSub'),
+    opMul: document.getElementById('opMul'),
+    opDiv: document.getElementById('opDiv'),
+
+    pickHint: document.getElementById('pickHint'),
+
+    d1: document.getElementById('d1'),
+    d2: document.getElementById('d2'),
+    d3: document.getElementById('d3'),
+    targetHint: document.getElementById('targetHint'),
+
+    timeLeft: document.getElementById('timeLeft'),
+    timerHint: document.getElementById('timerHint'),
+
+    workArea: document.getElementById('workArea'),
+    workMeta: document.getElementById('workMeta'),
+
+    feedback: document.getElementById('feedback'),
+    bestAnswer: document.getElementById('bestAnswer'),
+    roundState: document.getElementById('roundState'),
+
+    history: document.getElementById('history'),
+    clearHistoryBtn: document.getElementById('clearHistoryBtn'),
+  };
+
+  // State
+  let state = {
+    tiles: [],        // { id, value, kind: 'large'|'small'|'result', revealed: bool }
+    tilesAtStart: [],
+    target: null,
+    selectedIds: [],  // up to 2
+    lockedId: null,
+    workLines: [],
+    stack: [],        // undo snapshots
+    timerSeconds: 30,
+    timeRemaining: null,
+    timerId: null,
+    roundActive: false,
+    revealInProgress: false,
+    best: null,
+    hasGreeted: false,
+
+    targetRollTimers: [],
+    targetRolling: false,
+  };
+
+  // Voice (best effort UK female)
+  let chosenVoice = null;
+
+  function pickVoice(){
+    if (!('speechSynthesis' in window)) return null;
+
+    const voices = window.speechSynthesis.getVoices() || [];
+    if (!voices.length) return null;
+
+    // Try UK English first
+    const enGb = voices.filter(v => (v.lang || '').toLowerCase().startsWith('en-gb'));
+    // Prefer voices that look female by name, best effort
+    const femaleHints = ['female','woman','zira','susan','kate','hazel','serena','amy','emma','olivia','sophie','victoria'];
+    const score = (v) => {
+      const name = (v.name || '').toLowerCase();
+      let s = 0;
+      if ((v.lang || '').toLowerCase().startsWith('en-gb')) s += 50;
+      if (femaleHints.some(h => name.includes(h))) s += 25;
+      if (v.default) s += 5;
+      return s;
+    };
+    const pool = enGb.length ? enGb : voices.filter(v => (v.lang || '').toLowerCase().startsWith('en'));
+    pool.sort((a,b) => score(b) - score(a));
+    return pool[0] || null;
+  }
+
+  function speak(text){
+    try{
+      if (!('speechSynthesis' in window)) return;
+      const u = new SpeechSynthesisUtterance(text);
+      if (!chosenVoice) chosenVoice = pickVoice();
+      if (chosenVoice) u.voice = chosenVoice;
+      u.lang = chosenVoice?.lang || 'en-GB';
+      u.rate = 1.02;
+      u.pitch = 1.05;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    } catch {}
+  }
+
+  // Ensure voices loaded
+  if ('speechSynthesis' in window){
+    window.speechSynthesis.onvoiceschanged = () => {
+      chosenVoice = pickVoice();
+    };
+  }
+
+  // Utilities
+  function randInt(min, max){ return Math.floor(Math.random() * (max - min + 1)) + min; }
+  function shuffle(arr){
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+  function escapeHtml(str){
+    return String(str).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+  }
+  function formatTime(sec){
+    if (sec === null) return '--';
+    if (sec < 0) sec = 0;
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return m > 0 ? `${m}:${String(s).padStart(2,'0')}` : `${s}s`;
+  }
+  function scoreForDiff(diff){
+    if (diff === 0) return 10;
+    if (diff >= 1 && diff <= 5) return 7;
+    if (diff >= 6 && diff <= 10) return 5;
+    return 0;
+  }
+  function cryptoRandomId(){
+    return (crypto && crypto.getRandomValues)
+      ? [...crypto.getRandomValues(new Uint32Array(2))].map(n => n.toString(16)).join('')
+      : String(Math.random()).slice(2) + String(Date.now());
+  }
+  function clearTargetTimers(){
+    for (const t of state.targetRollTimers) clearTimeout(t);
+    state.targetRollTimers = [];
+  }
+
+  // Generation
+  function drawTiles(largeCount){
+    const smallCount = 6 - largeCount;
+    const large = shuffle(largePool).slice(0, largeCount);
+    const small = shuffle(smallPool).slice(0, smallCount);
+
+    const drawn = shuffle([
+      ...large.map(v => ({value:v, kind:'large'})),
+      ...small.map(v => ({value:v, kind:'small'})),
+    ]);
+
+    return drawn.map(t => ({
+      id: cryptoRandomId(),
+      value: t.value,
+      kind: t.kind,
+      revealed: false
+    }));
+  }
+
+  // UI render
+  function renderTiles(){
+    els.tiles.innerHTML = '';
+    for (const t of state.tiles){
+      const tileDiv = document.createElement('div');
+      tileDiv.className = 'tile';
+      if (t.revealed) tileDiv.classList.add('revealed');
+      if (state.selectedIds.includes(t.id)) tileDiv.classList.add('selected');
+      if (state.lockedId === t.id) tileDiv.classList.add('locked');
+
+      const card = document.createElement('div');
+      card.className = 'card';
+
+      const front = document.createElement('div');
+      front.className = 'face front';
+
+      const back = document.createElement('div');
+      back.className = 'face back';
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = String(t.value);
+      btn.addEventListener('click', () => onTileClick(t.id));
+      back.appendChild(btn);
+
+      card.appendChild(front);
+      card.appendChild(back);
+      tileDiv.appendChild(card);
+      els.tiles.appendChild(tileDiv);
+    }
+  }
+
+  function renderWork(){
+    els.workArea.textContent = state.workLines.length ? state.workLines.join('\n') : 'No steps yet.';
+    els.workMeta.textContent = state.roundActive ? `Tiles remaining: ${state.tiles.length}` : '';
+  }
+
+  function renderButtons(){
+    const twoSelected = state.selectedIds.length === 2;
+    const oneSelected = state.selectedIds.length === 1;
+
+    const canOperate = state.roundActive && !state.revealInProgress && !state.targetRolling && twoSelected;
+    els.opAdd.disabled = !canOperate;
+    els.opSub.disabled = !canOperate;
+    els.opMul.disabled = !canOperate;
+    els.opDiv.disabled = !canOperate;
+
+    els.undoBtn.disabled = !(state.roundActive && state.stack.length > 1 && !state.revealInProgress && !state.targetRolling);
+    els.resetWorkBtn.disabled = !(state.roundActive && (state.stack.length > 1 || state.workLines.length > 0) && !state.revealInProgress && !state.targetRolling);
+
+    els.lockInBtn.disabled = !(state.roundActive && oneSelected && !state.revealInProgress && !state.targetRolling);
+
+    // Start timer only after target fixed and reveal complete and timer not running
+    const timerReady = state.roundActive && !state.revealInProgress && !state.targetRolling && state.target !== null && state.timerId === null;
+    els.startTimerBtn.disabled = !timerReady;
+
+    if (!state.roundActive){
+      els.pickHint.textContent = 'Click “Reveal round” to begin.';
+    } else if (state.revealInProgress){
+      els.pickHint.textContent = 'Revealing tiles...';
+    } else if (state.targetRolling){
+      els.pickHint.textContent = 'Generating target...';
+    } else if (state.selectedIds.length === 0){
+      els.pickHint.textContent = 'Select two tiles, then choose an operation.';
+    } else if (state.selectedIds.length === 1){
+      els.pickHint.textContent = 'Select one more tile, or lock in this tile as your final answer.';
+    } else {
+      els.pickHint.textContent = 'Choose an operation.';
+    }
+
+    els.roundState.textContent = state.roundActive ? 'In play' : 'Round ended';
+  }
+
+  function renderAll(){
+    renderTiles();
+    renderWork();
+    renderButtons();
+    els.timeLeft.textContent = formatTime(state.timeRemaining);
+  }
+
+  // Target display helpers
+  function setDigit(el, val, locked){
+    el.textContent = String(val);
+    el.classList.toggle('locked', !!locked);
+  }
+  function resetTargetDisplay(){
+    clearTargetTimers();
+    state.target = null;
+    state.targetRolling = false;
+    setDigit(els.d1, '-', false);
+    setDigit(els.d2, '-', false);
+    setDigit(els.d3, '-', false);
+    els.targetHint.textContent = 'Reveal the round to generate a target.';
+  }
+
+  // Selection
+  function onTileClick(id){
+    if (!state.roundActive) return;
+    if (state.revealInProgress || state.targetRolling) return;
+
+    const t = state.tiles.find(x => x.id === id);
+    if (!t || !t.revealed) return;
+
+    const idx = state.selectedIds.indexOf(id);
+    if (idx >= 0){
+      state.selectedIds.splice(idx, 1);
+    } else {
+      if (state.selectedIds.length >= 2) state.selectedIds.shift();
+      state.selectedIds.push(id);
+    }
+    // selecting cancels lock marker until you lock in again
+    if (state.lockedId && state.lockedId !== id) state.lockedId = null;
+
+    renderAll();
+  }
+
+  // Undo stack
+  function pushUndo(){
+    state.stack.push({
+      tiles: state.tiles.map(t => ({...t})),
+      workLines: state.workLines.slice(),
+      lockedId: state.lockedId
+    });
+  }
+  function undo(){
+    if (!state.roundActive) return;
+    if (state.revealInProgress || state.targetRolling) return;
+    if (state.stack.length <= 1) return;
+
+    state.stack.pop();
+    const snap = state.stack[state.stack.length - 1];
+    state.tiles = snap.tiles.map(t => ({...t}));
+    state.workLines = snap.workLines.slice();
+    state.lockedId = snap.lockedId;
+    state.selectedIds = [];
+    els.feedback.innerHTML = `<span class="muted">Undone.</span>`;
+    renderAll();
+  }
+  function resetWork(){
+    if (!state.roundActive) return;
+    if (state.revealInProgress || state.targetRolling) return;
+    if (state.stack.length <= 1 && state.workLines.length === 0) return;
+
+    const base = state.stack[0];
+    state.tiles = base.tiles.map(t => ({...t}));
+    state.workLines = [];
+    state.lockedId = null;
+    state.selectedIds = [];
+    state.stack = [base];
+    els.feedback.innerHTML = `<span class="muted">Reset.</span>`;
+    renderAll();
+  }
+
+  // Apply operation
+  function applyOp(op){
+    if (!state.roundActive) return;
+    if (state.revealInProgress || state.targetRolling) return;
+    if (state.selectedIds.length !== 2) return;
+
+    const [aId, bId] = state.selectedIds;
+    const a = state.tiles.find(t => t.id === aId);
+    const b = state.tiles.find(t => t.id === bId);
+    if (!a || !b) return;
+    if (!a.revealed || !b.revealed) return;
+
+    const av = a.value;
+    const bv = b.value;
+
+    let result = null;
+    let expr = '';
+
+    try{
+      switch(op){
+        case '+':
+          result = av + bv;
+          expr = `${av} + ${bv} = ${result}`;
+          break;
+        case '*':
+          result = av * bv;
+          expr = `${av} × ${bv} = ${result}`;
+          break;
+        case '-':
+          if (av === bv) throw new Error('Subtraction would make 0, not allowed.');
+          if (av > bv){
+            result = av - bv;
+            expr = `${av} - ${bv} = ${result}`;
+          } else {
+            result = bv - av;
+            expr = `${bv} - ${av} = ${result}`;
+          }
+          break;
+        case '/':
+          if (bv !== 0 && av % bv === 0){
+            result = av / bv;
+            expr = `${av} ÷ ${bv} = ${result}`;
+          } else if (av !== 0 && bv % av === 0){
+            result = bv / av;
+            expr = `${bv} ÷ ${av} = ${result}`;
+          } else {
+            throw new Error('Division must be exact.');
+          }
+          break;
+        default:
+          return;
+      }
+
+      if (!Number.isInteger(result) || result <= 0) throw new Error('Result must be a positive integer.');
+
+      pushUndo();
+
+      state.tiles = state.tiles.filter(t => t.id !== aId && t.id !== bId);
+      state.tiles.push({ id: cryptoRandomId(), value: result, kind: 'result', revealed: true });
+
+      state.selectedIds = [];
+      state.lockedId = null;
+      state.workLines.push(expr);
+
+      els.feedback.innerHTML = `<span class="good">OK</span> ${escapeHtml(expr)}`;
+      renderAll();
+    } catch (e){
+      els.feedback.innerHTML = `<span class="bad">Not allowed</span> ${escapeHtml(e.message || String(e))}`;
+      renderAll();
+    }
+  }
+
+  // Timer
+  function stopTimer(){
+    if (state.timerId) clearInterval(state.timerId);
+    state.timerId = null;
+  }
+  function startTimer(){
+    if (!state.roundActive) return;
+    if (state.revealInProgress || state.targetRolling) return;
+    if (state.target === null) return;
+
+    const seconds = parseInt(els.timerMode.value, 10);
+    state.timerSeconds = seconds;
+    state.timeRemaining = seconds;
+    els.timerHint.textContent = seconds === 0 ? 'Unlimited' : 'Timer running';
+    renderAll();
+
+    if (seconds === 0) return;
+
+    // last 5 seconds spoken
+    stopTimer();
+    state.timerId = setInterval(() => {
+      state.timeRemaining--;
+      renderAll();
+
+      if (state.timeRemaining <= 5 && state.timeRemaining >= 1){
+        speak(String(state.timeRemaining));
+      }
+
+      if (state.timeRemaining <= 0){
+        state.timeRemaining = 0;
+        stopTimer();
+        onTimeUp();
+      }
+    }, 1000);
+  }
+  function onTimeUp(){
+    state.roundActive = false;
+    els.feedback.innerHTML = `<span class="bad">Time.</span>`;
+    revealBestAnswer();
+    renderAll();
+  }
+
+  // Best solver
+  function computeBest(tiles, target){
+    const vals = tiles.map(t => t.value);
+    const n = vals.length;
+
+    const memo = new Map(); // mask -> Map(value -> expr)
+    const keyFor = (mask) => mask.toString(16);
+    function getMap(mask){
+      const k = keyFor(mask);
+      if (!memo.has(k)) memo.set(k, new Map());
+      return memo.get(k);
+    }
+    function outSet(map, value, expr){
+      if (!Number.isInteger(value)) return;
+      if (value <= 0) return;
+      if (value > 50000) return;
+      if (!map.has(value)) map.set(value, expr);
+    }
+
+    for (let i = 0; i < n; i++){
+      const mask = 1 << i;
+      getMap(mask).set(vals[i], String(vals[i]));
+    }
+
+    for (let mask = 1; mask < (1 << n); mask++){
+      for (let a = (mask - 1) & mask; a > 0; a = (a - 1) & mask){
+        const b = mask ^ a;
+        if (b === 0) continue;
+        if (a > b) continue;
+
+        const mapA = getMap(a);
+        const mapB = getMap(b);
+        if (!mapA.size || !mapB.size) continue;
+
+        const out = getMap(mask);
+        for (const [va, ea] of mapA.entries()){
+          for (const [vb, eb] of mapB.entries()){
+            outSet(out, va + vb, `(${ea}+${eb})`);
+            outSet(out, va * vb, `(${ea}*${eb})`);
+
+            if (va > vb) outSet(out, va - vb, `(${ea}-${eb})`);
+            if (vb > va) outSet(out, vb - va, `(${eb}-${ea})`);
+
+            if (vb !== 0 && va % vb === 0) outSet(out, va / vb, `(${ea}/${eb})`);
+            if (va !== 0 && vb % va === 0) outSet(out, vb / va, `(${eb}/${ea})`);
+          }
+        }
+      }
+    }
+
+    let best = null;
+    for (let mask = 1; mask < (1 << n); mask++){
+      const m = getMap(mask);
+      for (const [v, e] of m.entries()){
+        const diff = Math.abs(target - v);
+        if (best === null || diff < best.diff) best = { value: v, expr: e, diff };
+        if (best && best.diff === 0) return best;
+      }
+    }
+    return best;
+  }
+
+  function revealBestAnswer(){
+    const sourceTiles = state.tilesAtStart.length ? state.tilesAtStart : state.tiles;
+    state.best = computeBest(sourceTiles, state.target);
+    if (!state.best){
+      els.bestAnswer.innerHTML = `<span class="bad">No solution computed.</span>`;
+      return;
+    }
+    const diff = Math.abs(state.target - state.best.value);
+    const exact = diff === 0;
+    els.bestAnswer.innerHTML = `
+      <div><span class="${exact ? 'good' : ''}">Best: ${state.best.value}</span> (diff ${diff})</div>
+      <div class="mono">${escapeHtml(state.best.expr)}</div>
+    `;
+  }
+
+  // Lock in
+  function lockIn(){
+    if (!state.roundActive) return;
+    if (state.revealInProgress || state.targetRolling) return;
+    if (state.selectedIds.length !== 1) return;
+
+    const id = state.selectedIds[0];
+    const t = state.tiles.find(x => x.id === id);
+    if (!t || !t.revealed) return;
+
+    state.lockedId = id;
+
+    const userValue = t.value;
+    const diff = Math.abs(state.target - userValue);
+    const points = scoreForDiff(diff);
+
+    state.roundActive = false;
+    stopTimer();
+
+    revealBestAnswer();
+
+    els.feedback.innerHTML = `
+      <span class="good">Locked in.</span>
+      Value: <b>${userValue}</b>, diff: <b>${diff}</b>, points: <b>${points}</b>
+    `;
+
+    saveHistory({
+      ts: Date.now(),
+      tiles: state.tilesAtStart.map(x => x.value),
+      target: state.target,
+      steps: state.workLines.slice(),
+      userValue,
+      bestValue: state.best ? state.best.value : null,
+      points
+    });
+
+    renderHistory();
+    renderAll();
+  }
+
+  // History
+  const HISTORY_KEY = 'acer_challenge_history_v1';
+  function loadHistory(){
+    try{
+      const raw = localStorage.getItem(HISTORY_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch { return []; }
+  }
+  function saveHistory(item){
+    const items = loadHistory();
+    items.push(item);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(items));
+  }
+  function renderHistory(){
+    const items = loadHistory();
+    if (!items.length){
+      els.history.innerHTML = `<div class="muted">No rounds yet.</div>`;
+      return;
+    }
+    const rows = items.slice().reverse().map(it => `
+      <tr>
+        <td>${escapeHtml(new Date(it.ts).toLocaleString())}</td>
+        <td class="mono">${escapeHtml(it.tiles.join(', '))}</td>
+        <td>${it.target}</td>
+        <td>${it.userValue ?? ''}</td>
+        <td>${it.bestValue ?? ''}</td>
+        <td>${it.points}</td>
+      </tr>
+    `).join('');
+    els.history.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>When</th>
+            <th>Tiles</th>
+            <th>Target</th>
+            <th>Your value</th>
+            <th>Best</th>
+            <th>Points</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  }
+
+  // Reveal sequence
+  async function revealRound(){
+    if (state.revealInProgress || state.targetRolling) return;
+
+    // Greeting line requested
+    if (!state.hasGreeted){
+      // Note: most browsers require user gesture for speech. This is a click, so fine.
+      speak('Select how many large numbers and let\'s go.');
+      state.hasGreeted = true;
+    }
+
+    const largeCount = parseInt(els.largeCount.value, 10);
+    const smallCount = 6 - largeCount;
+    els.smallCount.value = String(smallCount);
+
+    // Voice: that's X large and Y small numbers
+    speak(`That\'s ${largeCount} large and ${smallCount} small numbers.`);
+
+    // Reset everything
+    stopTimer();
+    state.timeRemaining = null;
+    els.timerHint.textContent = 'Timer does not start automatically.';
+    els.timeLeft.textContent = '--';
+
+    state.roundActive = true;
+    state.revealInProgress = true;
+    state.targetRolling = false;
+    state.selectedIds = [];
+    state.lockedId = null;
+    state.workLines = [];
+    state.stack = [];
+    state.best = null;
+    els.bestAnswer.textContent = '---';
+    els.feedback.textContent = '';
+    resetTargetDisplay();
+
+    // Create tiles as blank cards
+    state.tiles = drawTiles(largeCount);
+    state.tilesAtStart = state.tiles.map(t => ({...t}));
+    state.stack.push({ tiles: state.tiles.map(t => ({...t})), workLines: [], lockedId: null });
+
+    renderAll();
+
+    // Flip tiles one by one, 1 second gap
+    for (let i = 0; i < state.tiles.length; i++){
+      await wait(1000);
+      state.tiles[i].revealed = true;
+      renderAll();
+    }
+
+    state.revealInProgress = false;
+
+    // Wait 2 seconds, then voice line
+    await wait(2000);
+    speak('And the number is');
+
+    // Roll target digits
+    await rollTargetAndFix();
+
+    // After target locked, speak the number
+    speak(String(state.target));
+
+    els.targetHint.textContent = 'Press Start timer when you are ready.';
+    renderAll();
+  }
+
+  function wait(ms){ return new Promise(res => setTimeout(res, ms)); }
+
+  async function rollTargetAndFix(){
+    clearTargetTimers();
+    state.targetRolling = true;
+
+    // Decide final digits
+    const final1 = randInt(1, 9);
+    const final2 = randInt(0, 9);
+    const final3 = randInt(0, 9);
+
+    // rolling update every 110ms
+    const start = performance.now();
+    let lock1 = false, lock2 = false, lock3 = false;
+
+    const tick = () => {
+      if (!state.targetRolling) return;
+
+      const now = performance.now();
+      const t = (now - start) / 1000;
+
+      // lock schedule: d1 at 4s, d2 at 6s, d3 at 7s
+      if (t >= 4 && !lock1){ lock1 = true; setDigit(els.d1, final1, true); }
+      if (t >= 6 && !lock2){ lock2 = true; setDigit(els.d2, final2, true); }
+      if (t >= 7 && !lock3){ lock3 = true; setDigit(els.d3, final3, true); }
+
+      // update any unlocked digits
+      if (!lock1) setDigit(els.d1, randInt(0,9), false);
+      if (!lock2) setDigit(els.d2, randInt(0,9), false);
+      if (!lock3) setDigit(els.d3, randInt(0,9), false);
+
+      if (lock3){
+        state.targetRolling = false;
+        state.target = final1 * 100 + final2 * 10 + final3;
+        return;
+      }
+      requestAnimationFrame(tick);
+    };
+
+    requestAnimationFrame(tick);
+
+    // Wait until locking done
+    while (state.targetRolling){
+      await wait(60);
+    }
+  }
+
+  // Operator wiring
+  for (const btn of [els.opAdd, els.opSub, els.opMul, els.opDiv]){
+    btn.addEventListener('click', () => {
+      const op = btn.getAttribute('data-op');
+      applyOp(op);
+    });
+  }
+
+  // Events
+  els.largeCount.addEventListener('change', () => {
+    const largeCount = parseInt(els.largeCount.value, 10);
+    els.smallCount.value = String(6 - largeCount);
+  });
+
+  els.newRoundBtn.addEventListener('click', revealRound);
+  els.startTimerBtn.addEventListener('click', startTimer);
+  els.undoBtn.addEventListener('click', undo);
+  els.resetWorkBtn.addEventListener('click', resetWork);
+  els.lockInBtn.addEventListener('click', lockIn);
+
+  els.clearHistoryBtn.addEventListener('click', () => {
+    localStorage.removeItem(HISTORY_KEY);
+    renderHistory();
+  });
+
+  // Init
+  renderHistory();
+  resetTargetDisplay();
+  state.timeRemaining = null;
+  els.timeLeft.textContent = '--';
+  els.roundState.textContent = 'Not started';
+  renderAll();
+})();
+</script>
+</body>
+</html>
