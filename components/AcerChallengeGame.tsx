@@ -218,7 +218,10 @@ export default function AcerChallengeGame() {
       pushUndo(tiles, workLines.slice(), lockedId);
 
       const remaining = tiles.filter((tile) => tile.id !== firstId && tile.id !== secondId);
-      const nextTiles = [...remaining, { id: createTileId(), value: result.value, kind: 'result', revealed: true }];
+      const nextTiles: Tile[] = [
+        ...remaining,
+        { id: createTileId(), value: result.value, kind: 'result', revealed: true }
+      ];
       setTiles(nextTiles);
       setSelectedIds([]);
       setLockedId(null);
