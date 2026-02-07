@@ -147,6 +147,16 @@ button:disabled{ opacity:.55; cursor:not-allowed; }
   .tileRow{ flex-wrap:wrap; }
 }
 
+@media (max-width: 768px){
+  .tileRow{
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    justify-content: flex-start;
+    padding-bottom: 6px;
+  }
+  .tile{ flex: 0 0 auto; }
+}
+
 .box{
   border: 1px solid var(--line);
   border-radius: 14px;
