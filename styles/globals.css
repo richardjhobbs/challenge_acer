@@ -41,6 +41,38 @@ a{ color: inherit; text-decoration: none; }
   margin-bottom: 14px;
 }
 
+.startOverlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 9, 20, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 24px;
+}
+
+.startOverlayCard{
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(0,0,0,.45);
+  padding: 24px 28px;
+  text-align: center;
+  max-width: 360px;
+  box-shadow: var(--shadow);
+}
+
+.startOverlayCard h2{
+  margin: 0 0 10px;
+  font-size: 26px;
+}
+
+.startOverlayCard button{
+  margin-top: 16px;
+  padding: 12px 22px;
+  font-weight: 700;
+}
+
 h1{ margin:0; font-size: 22px; letter-spacing:.2px; }
 
 .muted{ color: var(--muted); font-size: 13px; }
