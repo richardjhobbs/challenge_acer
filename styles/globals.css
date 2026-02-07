@@ -148,6 +148,15 @@ button:disabled{ opacity:.55; cursor:not-allowed; }
 }
 
 @media (max-width: 768px){
+  .displayRow{
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "target timer"
+      "tiles tiles";
+  }
+  .displayRow > .box:first-child{ grid-area: target; }
+  .displayRow > .tilesWrap{ grid-area: tiles; }
+  .displayRow > .box:last-child{ grid-area: timer; }
   .tileRow{
     flex-wrap: nowrap;
     overflow-x: auto;
