@@ -10,8 +10,8 @@ export default function HowToPlay() {
           <b>Reveal:</b> the six tiles flip over one-by-one, then the target display rolls and locks into a 3-digit number.
         </div>
         <div>
-          <b>Step mode:</b> select two revealed tiles, pick an operation (+, -, ×, ÷). The result becomes a new tile. Each
-          tile can be used once per step.
+          <b>Step mode:</b> pick a revealed number, choose an operation (+, -, ×, ÷), then pick the next number. The result
+          becomes a new tile. Each tile can be used once per step.
         </div>
         <div>
           <b>Constraints:</b> intermediate results must be positive integers, division must be exact, no concatenation.

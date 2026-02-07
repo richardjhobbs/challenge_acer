@@ -13,18 +13,19 @@ export type GamePhase = 'IDLE' | 'REVEALING_TILES' | 'TARGET_ROLLING' | 'READY' 
 
 export interface HistoryItem {
   ts: number;
-  tiles: number[];
+  tilesAtStart: number[];
   target: number;
-  steps: string[];
-  userValue: number | null;
-  bestValue: number | null;
+  userFinalValue: number | null;
+  userSteps: string[];
+  bestFinalValue: number | null;
+  bestSteps: string[];
   points: number;
 }
 
 export interface BestSolution {
   value: number;
-  expr: string;
   diff: number;
+  steps: string[];
 }
 
 export interface RoundPayload {

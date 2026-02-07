@@ -15,10 +15,10 @@ import type { BestSolution, GamePhase, HistoryItem, Operation, Tile } from '@/li
 const LARGE_POOL = [25, 50, 75, 100];
 const SMALL_POOL = Array.from({ length: 10 }, (_, i) => i + 1).flatMap((n) => [n, n]);
 
-interface UndoSnapshot {
-  tiles: Tile[];
-  workLines: string[];
-  lockedId: string | null;
+interface AppliedStep {
+  beforeTiles: Tile[];
+  afterTiles: Tile[];
+  workLinesBefore: string[];
 }
 
 const DEFAULT_DIGITS = [
@@ -39,10 +39,12 @@ export default function AcerChallengeGame() {
   const [phase, setPhase] = useState<GamePhase>('IDLE');
   const [tiles, setTiles] = useState<Tile[]>([]);
   const [tilesAtStart, setTilesAtStart] = useState<Tile[]>([]);
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [pendingFirstId, setPendingFirstId] = useState<string | null>(null);
+  const [pendingOp, setPendingOp] = useState<Operation | null>(null);
+  const [pendingSecondId, setPendingSecondId] = useState<string | null>(null);
   const [lockedId, setLockedId] = useState<string | null>(null);
   const [workLines, setWorkLines] = useState<string[]>([]);
-  const [undoStack, setUndoStack] = useState<UndoSnapshot[]>([]);
+  const [appliedSteps, setAppliedSteps] = useState<AppliedStep[]>([]);
   const [target, setTarget] = useState<number | null>(null);
   const [digits, setDigits] = useState(DEFAULT_DIGITS);
   const [targetHint, setTargetHint] = useState('Reveal the round to generate a target.');
@@ -64,10 +66,24 @@ export default function AcerChallengeGame() {
   const isTargetRolling = phase === 'TARGET_ROLLING';
   const roundActive = phase !== 'IDLE' && phase !== 'ENDED';
 
-  const canOperate = roundActive && !isRevealing && !isTargetRolling && selectedIds.length === 2;
-  const canLockIn = roundActive && !isRevealing && !isTargetRolling && selectedIds.length === 1;
-  const canUndo = roundActive && !isRevealing && !isTargetRolling && undoStack.length > 1;
-  const canReset = roundActive && !isRevealing && !isTargetRolling && (undoStack.length > 1 || workLines.length > 0);
+  const selectedIds = useMemo(() => {
+    const ids: string[] = [];
+    if (pendingFirstId) ids.push(pendingFirstId);
+    if (pendingSecondId) ids.push(pendingSecondId);
+    return ids;
+  }, [pendingFirstId, pendingSecondId]);
+  const canPickOperator = roundActive && !isRevealing && !isTargetRolling && pendingFirstId !== null;
+  const canLockIn = roundActive && !isRevealing && !isTargetRolling && pendingFirstId !== null && pendingOp === null;
+  const canBack =
+    roundActive &&
+    !isRevealing &&
+    !isTargetRolling &&
+    (pendingFirstId !== null || pendingOp !== null || appliedSteps.length > 0);
+  const canReset =
+    roundActive &&
+    !isRevealing &&
+    !isTargetRolling &&
+    (pendingFirstId !== null || pendingOp !== null || appliedSteps.length > 0 || workLines.length > 0);
   const canStartTimer = phase === 'READY' && target !== null;
   const roundStateText = phase === 'IDLE' ? 'Not started' : roundActive ? 'In play' : 'Round ended';
 
@@ -77,10 +93,10 @@ export default function AcerChallengeGame() {
     if (!roundActive) return 'Click “Reveal round” to begin.';
     if (isRevealing) return 'Revealing tiles...';
     if (isTargetRolling) return 'Generating target...';
-    if (selectedIds.length === 0) return 'Select two tiles, then choose an operation.';
-    if (selectedIds.length === 1) return 'Select one more tile, or lock in this tile as your final answer.';
-    return 'Choose an operation.';
-  }, [roundActive, isRevealing, isTargetRolling, selectedIds.length]);
+    if (!pendingFirstId) return 'Pick a number';
+    if (!pendingOp) return 'Pick an operator';
+    return 'Pick the next number';
+  }, [roundActive, isRevealing, isTargetRolling, pendingFirstId, pendingOp]);
 
   const timeDisplay = useMemo(() => {
     if (timeRemaining === null) return '--';
@@ -187,77 +203,117 @@ export default function AcerChallengeGame() {
     [createTileId, rng]
   );
 
-  const pushUndo = useCallback((nextTiles: Tile[], nextWork: string[], nextLocked: string | null) => {
-    setUndoStack((prev) => [...prev, { tiles: nextTiles.map((tile) => ({ ...tile })), workLines: nextWork, lockedId: nextLocked }]);
+  const pushAppliedStep = useCallback((beforeTiles: Tile[], afterTiles: Tile[], workLinesBefore: string[]) => {
+    setAppliedSteps((prev) => [
+      ...prev,
+      {
+        beforeTiles: beforeTiles.map((tile) => ({ ...tile })),
+        afterTiles: afterTiles.map((tile) => ({ ...tile })),
+        workLinesBefore: workLinesBefore.slice()
+      }
+    ]);
   }, []);
+
+  const applyPendingOperation = useCallback(
+    (firstId: string, secondId: string, op: Operation) => {
+      const first = tiles.find((tile) => tile.id === firstId);
+      const second = tiles.find((tile) => tile.id === secondId);
+      if (!first || !second || !first.revealed || !second.revealed) return;
+
+      try {
+        const result = applyOperation(first.value, second.value, op);
+        const remaining = tiles.filter((tile) => tile.id !== firstId && tile.id !== secondId);
+        const resultTile: Tile = { id: createTileId(), value: result.value, kind: 'result', revealed: true };
+        const nextTiles: Tile[] = [...remaining, resultTile];
+        const nextWorkLines = [...workLines, result.expression];
+
+        pushAppliedStep(tiles, nextTiles, workLines);
+
+        setTiles(nextTiles);
+        setWorkLines(nextWorkLines);
+        setPendingFirstId(null);
+        setPendingOp(null);
+        setPendingSecondId(null);
+        setLockedId(null);
+        setFeedback({ tone: 'good', message: `OK ${result.expression}` });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        setPendingSecondId(null);
+        setFeedback({ tone: 'bad', message: `Not allowed ${message}` });
+      }
+    },
+    [createTileId, pushAppliedStep, tiles, workLines]
+  );
 
   const handleTileClick = (id: string) => {
     if (!roundActive || isRevealing || isTargetRolling) return;
     const tile = tiles.find((item) => item.id === id);
     if (!tile || !tile.revealed) return;
-    setSelectedIds((prev) => {
-      if (prev.includes(id)) {
-        return prev.filter((item) => item !== id);
+
+    if (!pendingFirstId) {
+      setPendingFirstId(id);
+      setPendingOp(null);
+      setPendingSecondId(null);
+    } else if (!pendingOp) {
+      if (pendingFirstId === id) {
+        setPendingFirstId(null);
+      } else {
+        setPendingFirstId(id);
       }
-      const next = prev.length >= 2 ? prev.slice(1) : prev.slice();
-      next.push(id);
-      return next;
-    });
+      setPendingSecondId(null);
+    } else if (pendingFirstId !== id) {
+      setPendingSecondId(id);
+      applyPendingOperation(pendingFirstId, id, pendingOp);
+    }
+
     if (lockedId && lockedId !== id) setLockedId(null);
   };
 
   const handleOperation = (op: Operation) => {
-    if (!canOperate) return;
-    const [firstId, secondId] = selectedIds;
-    const first = tiles.find((tile) => tile.id === firstId);
-    const second = tiles.find((tile) => tile.id === secondId);
-    if (!first || !second || !first.revealed || !second.revealed) return;
-
-    try {
-      const result = applyOperation(first.value, second.value, op);
-      pushUndo(tiles, workLines.slice(), lockedId);
-
-      const remaining = tiles.filter((tile) => tile.id !== firstId && tile.id !== secondId);
-      const nextTiles: Tile[] = [
-        ...remaining,
-        { id: createTileId(), value: result.value, kind: 'result', revealed: true }
-      ];
-      setTiles(nextTiles);
-      setSelectedIds([]);
-      setLockedId(null);
-      setWorkLines((prev) => [...prev, result.expression]);
-      setFeedback({ tone: 'good', message: `OK ${result.expression}` });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      setFeedback({ tone: 'bad', message: `Not allowed ${message}` });
-    }
+    if (!canPickOperator) return;
+    setPendingOp(op);
+    setPendingSecondId(null);
   };
 
-  const handleUndo = () => {
-    if (!canUndo) return;
-    setUndoStack((prev) => {
-      const nextStack = prev.slice(0, -1);
-      const snapshot = nextStack[nextStack.length - 1];
-      setTiles(snapshot.tiles.map((tile) => ({ ...tile })));
-      setWorkLines(snapshot.workLines.slice());
-      setLockedId(snapshot.lockedId);
-      setSelectedIds([]);
-      setFeedback({ tone: 'muted', message: 'Undone.' });
-      return nextStack;
+  const handleBack = () => {
+    if (!canBack) return;
+    if (pendingFirstId && !pendingOp) {
+      setPendingFirstId(null);
+      setPendingSecondId(null);
+      return;
+    }
+    if (pendingFirstId && pendingOp) {
+      setPendingOp(null);
+      setPendingSecondId(null);
+      return;
+    }
+
+    setAppliedSteps((prev) => {
+      if (!prev.length) return prev;
+      const next = prev.slice(0, -1);
+      const last = prev[prev.length - 1];
+      setTiles(last.beforeTiles.map((tile) => ({ ...tile })));
+      setWorkLines(last.workLinesBefore.slice());
+      setPendingFirstId(null);
+      setPendingOp(null);
+      setPendingSecondId(null);
+      setLockedId(null);
+      setFeedback({ tone: 'muted', message: 'Back.' });
+      return next;
     });
   };
 
   const handleReset = () => {
     if (!canReset) return;
-    setUndoStack((prev) => {
-      const base = prev[0];
-      setTiles(base.tiles.map((tile) => ({ ...tile })));
-      setWorkLines([]);
-      setLockedId(null);
-      setSelectedIds([]);
-      setFeedback({ tone: 'muted', message: 'Reset.' });
-      return [base];
-    });
+    if (!tilesAtStart.length) return;
+    setTiles(tilesAtStart.map((tile) => ({ ...tile, revealed: true })));
+    setWorkLines([]);
+    setAppliedSteps([]);
+    setPendingFirstId(null);
+    setPendingOp(null);
+    setPendingSecondId(null);
+    setLockedId(null);
+    setFeedback({ tone: 'muted', message: 'Reset.' });
   };
 
   const computeBest = useCallback(
@@ -271,7 +327,7 @@ export default function AcerChallengeGame() {
 
   const lockInAnswer = () => {
     if (!canLockIn || target === null) return;
-    const selected = tiles.find((tile) => tile.id === selectedIds[0]);
+    const selected = tiles.find((tile) => tile.id === pendingFirstId);
     if (!selected) return;
 
     setLockedId(selected.id);
@@ -289,11 +345,12 @@ export default function AcerChallengeGame() {
 
     saveHistory({
       ts: Date.now(),
-      tiles: tilesAtStart.map((tile) => tile.value),
+      tilesAtStart: tilesAtStart.map((tile) => tile.value),
       target,
-      steps: workLines.slice(),
-      userValue: selected.value,
-      bestValue: best ? best.value : null,
+      userFinalValue: selected.value,
+      userSteps: workLines.slice(),
+      bestFinalValue: best ? best.value : null,
+      bestSteps: best ? best.steps : [],
       points
     });
 
@@ -410,17 +467,18 @@ export default function AcerChallengeGame() {
     setTimerHint('Timer does not start automatically.');
     setFeedback(null);
     setBestAnswer(null);
-    setSelectedIds([]);
+    setPendingFirstId(null);
+    setPendingOp(null);
+    setPendingSecondId(null);
     setLockedId(null);
     setWorkLines([]);
-    setUndoStack([]);
+    setAppliedSteps([]);
     resetTarget();
 
     setPhase('REVEALING_TILES');
     const freshTiles = drawTiles(largeCount);
     setTiles(freshTiles);
-    setTilesAtStart(freshTiles.map((tile) => ({ ...tile })));
-    setUndoStack([{ tiles: freshTiles.map((tile) => ({ ...tile })), workLines: [], lockedId: null }]);
+    setTilesAtStart(freshTiles.map((tile) => ({ ...tile, revealed: true })));
 
     for (let i = 0; i < freshTiles.length; i += 1) {
       await new Promise((res) => setTimeout(res, 1000));
@@ -451,7 +509,11 @@ export default function AcerChallengeGame() {
       <div>
         <span className={bestAnswer.diff === 0 ? 'good' : ''}>Best: {bestAnswer.value}</span> (diff {bestAnswer.diff})
       </div>
-      <div className="mono">{bestAnswer.expr}</div>
+      <div style={{ height: 8 }} />
+      <div className="muted">Steps:</div>
+      <div className="mono" style={{ whiteSpace: 'pre-wrap' }}>
+        {bestAnswer.steps.length ? bestAnswer.steps.join('\n') : '—'}
+      </div>
     </>
   ) : (
     '---'
@@ -504,8 +566,8 @@ export default function AcerChallengeGame() {
             <button id="startTimerBtn" className="btnDanger" disabled={!canStartTimer} onClick={startTimer}>
               Start timer
             </button>
-            <button id="undoBtn" className="btnGhost" disabled={!canUndo} onClick={handleUndo}>
-              Undo
+            <button id="backBtn" className="btnGhost" disabled={!canBack} onClick={handleBack}>
+              Back
             </button>
             <button id="resetWorkBtn" className="btnGhost" disabled={!canReset} onClick={handleReset}>
               Reset work
@@ -526,7 +588,8 @@ export default function AcerChallengeGame() {
               lockedId={lockedId}
               onTileClick={handleTileClick}
               hint={pickHint}
-              canOperate={canOperate}
+              canPickOperator={canPickOperator}
+              pendingOp={pendingOp}
               onOperation={handleOperation}
             />
 
@@ -562,7 +625,7 @@ export default function AcerChallengeGame() {
               <div style={{ fontWeight: 800 }}>Best answer (computed)</div>
               <div className="muted">Shown after you lock in, or when time ends.</div>
               <div style={{ height: 10 }} />
-              <div className="mono">{bestAnswerView}</div>
+              <div>{bestAnswerView}</div>
             </div>
           </div>
 
