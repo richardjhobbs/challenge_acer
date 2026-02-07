@@ -5,7 +5,7 @@ interface TargetDisplayProps {
 
 export default function TargetDisplay({ digits, hint }: TargetDisplayProps) {
   return (
-    <div className="box">
+    <div className="box targetBox">
       <div className="muted">Target</div>
       <div className="calc" aria-label="target display">
         {digits.map((digit, index) => (

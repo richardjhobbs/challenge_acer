@@ -187,6 +187,9 @@ export default function AcerChallengeGame() {
     (options: { type: OscillatorType; frequency: number; duration: number; peak: number }) => {
       const context = getAudioContext();
       if (!context) return;
+      if (context.state === 'suspended') {
+        void context.resume().catch(() => {});
+      }
       const oscillator = context.createOscillator();
       const gain = context.createGain();
       oscillator.type = options.type;
@@ -676,9 +679,22 @@ export default function AcerChallengeGame() {
     void revealRound(largeCount);
   };
 
-  const handleStart = () => {
-    registerUserGesture();
+  const handleStart = async () => {
     setHasStarted(true);
+    hasUserGestureRef.current = true;
+    try {
+      const context = getAudioContext();
+      if (context?.state === 'suspended') {
+        await context.resume();
+      }
+    } catch {
+      // no-op
+    }
+    try {
+      window.speechSynthesis?.getVoices?.();
+    } catch {
+      // no-op
+    }
     if (!welcomeSpokenRef.current) {
       announce("Welcome to Challenge Acer. Can you beat him? Choose how many large numbers and let's go.");
       welcomeSpokenRef.current = true;
@@ -771,7 +787,17 @@ export default function AcerChallengeGame() {
 
         <div className="arena">
           <div className="displayRow">
-            <TargetDisplay digits={digits} hint={targetHint} />
+            <div className="mobileTopRow">
+              <TargetDisplay digits={digits} hint={targetHint} />
+
+              <div className="box timerBox">
+                <div className="muted">Time</div>
+                <div className="led">
+                  <span>{timeDisplay}</span>
+                </div>
+                <div className="smallNote">{timerHint}</div>
+              </div>
+            </div>
 
             <TilesBoard
               tiles={tiles}
@@ -785,14 +811,6 @@ export default function AcerChallengeGame() {
               canLockIn={canLockIn}
               onLockIn={lockInAnswer}
             />
-
-            <div className="box">
-              <div className="muted">Time</div>
-              <div className="led">
-                <span>{timeDisplay}</span>
-              </div>
-              <div className="smallNote">{timerHint}</div>
-            </div>
           </div>
 
           <div className="statusRow">
