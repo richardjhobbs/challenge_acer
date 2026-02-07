@@ -126,6 +126,7 @@ export default function AcerChallengeGame() {
 
   const announceCountdown = useCallback(
     (text: string) => {
+      if (!hasUserGestureRef.current) return;
       if (!isSpeechSupported()) return;
       speakText(text, voice, { interrupt: true });
     },
@@ -216,9 +217,11 @@ export default function AcerChallengeGame() {
   }, [playTone]);
 
   const handleEndOfRoundEffects = useCallback(
-    (exact: boolean) => {
+    (exact: boolean, options?: { skipBuzzer?: boolean }) => {
       if (!hasUserGestureRef.current) return;
-      playBuzzer();
+      if (!options?.skipBuzzer) {
+        playBuzzer();
+      }
       setTimeout(() => {
         announce("Let's see how you did");
       }, 450);
@@ -466,6 +469,7 @@ export default function AcerChallengeGame() {
       points: number;
       feedbackMessage: string;
       exact: boolean;
+      skipBuzzer?: boolean;
     }) => {
       stopTimer();
       clearAutoStartTimer();
@@ -473,7 +477,7 @@ export default function AcerChallengeGame() {
       setFeedback({ tone: options.didSubmit ? 'good' : 'bad', message: options.feedbackMessage });
 
       if (target === null) {
-        handleEndOfRoundEffects(options.exact);
+        handleEndOfRoundEffects(options.exact, { skipBuzzer: options.skipBuzzer });
         return;
       }
 
@@ -494,7 +498,7 @@ export default function AcerChallengeGame() {
       });
 
       setHistoryItems(loadHistory());
-      handleEndOfRoundEffects(options.exact);
+      handleEndOfRoundEffects(options.exact, { skipBuzzer: options.skipBuzzer });
     },
     [
       clearAutoStartTimer,
@@ -528,14 +532,16 @@ export default function AcerChallengeGame() {
   };
 
   const handleTimeUp = useCallback(() => {
+    playBuzzer();
     endRound({
       didSubmit: false,
       userFinalValue: null,
       points: 0,
       feedbackMessage: 'FAIL!',
-      exact: false
+      exact: false,
+      skipBuzzer: true
     });
-  }, [endRound]);
+  }, [endRound, playBuzzer]);
 
   const startTimer = () => {
     if (phaseRef.current !== 'READY') return;
@@ -787,7 +793,7 @@ export default function AcerChallengeGame() {
 
         <div className="arena">
           <div className="displayRow">
-            <div className="mobileTopRow">
+            <div className="topRow">
               <TargetDisplay digits={digits} hint={targetHint} />
 
               <div className="box timerBox">
