@@ -58,9 +58,10 @@ export default function AcerChallengeGame() {
   const [speechNote, setSpeechNote] = useState<string | null>(null);
   const [voice, setVoice] = useState<SpeechSynthesisVoice | null>(null);
   const [typedBestSteps, setTypedBestSteps] = useState('');
+  const [hasStarted, setHasStarted] = useState(false);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const preTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const autoStartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const typingRef = useRef<NodeJS.Timeout | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const rafRef = useRef<number | null>(null);
@@ -69,7 +70,7 @@ export default function AcerChallengeGame() {
   const welcomeSpokenRef = useRef(false);
   const phaseRef = useRef<GamePhase>(phase);
   const lockedIdRef = useRef<string | null>(null);
-  const preTimerCancelledRef = useRef(false);
+  const autoStartCancelledRef = useRef(false);
 
   const isRevealing = phase === 'REVEALING_TILES';
   const isTargetRolling = phase === 'TARGET_ROLLING';
@@ -93,7 +94,6 @@ export default function AcerChallengeGame() {
     !isRevealing &&
     !isTargetRolling &&
     (pendingFirstId !== null || pendingOp !== null || appliedSteps.length > 0 || workLines.length > 0);
-  const canStartTimer = phase === 'READY' && target !== null;
   const roundStateText = phase === 'IDLE' ? 'Not started' : roundActive ? 'In play' : 'Round ended';
 
   const workMeta = roundActive ? `Tiles remaining: ${tiles.length}` : '';
@@ -149,12 +149,12 @@ export default function AcerChallengeGame() {
     }
   }, []);
 
-  const clearPreTimer = useCallback(() => {
-    if (preTimerRef.current) {
-      clearTimeout(preTimerRef.current);
-      preTimerRef.current = null;
+  const clearAutoStartTimer = useCallback(() => {
+    if (autoStartTimeoutRef.current) {
+      clearTimeout(autoStartTimeoutRef.current);
+      autoStartTimeoutRef.current = null;
     }
-    preTimerCancelledRef.current = true;
+    autoStartCancelledRef.current = true;
   }, []);
 
   const registerUserGesture = useCallback(() => {
@@ -287,9 +287,9 @@ export default function AcerChallengeGame() {
 
   useEffect(() => () => {
     stopTimer();
-    if (preTimerRef.current) {
-      clearTimeout(preTimerRef.current);
-      preTimerRef.current = null;
+    if (autoStartTimeoutRef.current) {
+      clearTimeout(autoStartTimeoutRef.current);
+      autoStartTimeoutRef.current = null;
     }
     if (typingRef.current) {
       clearInterval(typingRef.current);
@@ -436,7 +436,7 @@ export default function AcerChallengeGame() {
     registerUserGesture();
     if (!canReset) return;
     if (!tilesAtStart.length) return;
-    clearPreTimer();
+    clearAutoStartTimer();
     setTiles(tilesAtStart.map((tile) => ({ ...tile, revealed: true })));
     setWorkLines([]);
     setAppliedSteps([]);
@@ -464,7 +464,7 @@ export default function AcerChallengeGame() {
 
     setLockedId(selected.id);
     stopTimer();
-    clearPreTimer();
+    clearAutoStartTimer();
     setPhase('ENDED');
 
     const diff = Math.abs(target - selected.value);
@@ -493,7 +493,7 @@ export default function AcerChallengeGame() {
 
   const handleTimeUp = useCallback(() => {
     stopTimer();
-    clearPreTimer();
+    clearAutoStartTimer();
     setPhase('ENDED');
     setFeedback({ tone: 'bad', message: 'Time.' });
     if (target !== null) {
@@ -511,10 +511,10 @@ export default function AcerChallengeGame() {
       setHistoryItems(loadHistory());
     }
     handleEndOfRoundEffects(false);
-  }, [clearPreTimer, computeBest, handleEndOfRoundEffects, stopTimer, target, tiles, tilesAtStart, workLines]);
+  }, [clearAutoStartTimer, computeBest, handleEndOfRoundEffects, stopTimer, target, tiles, tilesAtStart, workLines]);
 
   const startTimer = () => {
-    if (!canStartTimer) return;
+    if (phaseRef.current !== 'READY') return;
     setPhase('RUNNING');
     setTimeRemaining(timerMode);
     setTimerHint(timerMode === 0 ? 'Unlimited' : 'Timer running');
@@ -608,7 +608,7 @@ export default function AcerChallengeGame() {
     announce(`That’s ${largeCount} large and ${smallCount} small numbers`);
 
     stopTimer();
-    clearPreTimer();
+    clearAutoStartTimer();
     setTimeRemaining(null);
     setTimerHint('Timer starts automatically after the target reveal.');
     setFeedback(null);
@@ -641,10 +641,10 @@ export default function AcerChallengeGame() {
     announce('Timer starts in 10 seconds');
     setTimerHint('Timer starts in 10 seconds.');
     setTargetHint('Timer starts automatically after the reveal.');
-    preTimerCancelledRef.current = false;
-    if (preTimerRef.current) clearTimeout(preTimerRef.current);
-    preTimerRef.current = setTimeout(() => {
-      if (preTimerCancelledRef.current) return;
+    autoStartCancelledRef.current = false;
+    if (autoStartTimeoutRef.current) clearTimeout(autoStartTimeoutRef.current);
+    autoStartTimeoutRef.current = setTimeout(() => {
+      if (autoStartCancelledRef.current) return;
       if (phaseRef.current === 'ENDED' || lockedIdRef.current) return;
       startTimer();
     }, 10000);
@@ -652,11 +652,16 @@ export default function AcerChallengeGame() {
 
   const revealRoundWithInput = (largeCount: number) => {
     registerUserGesture();
+    void revealRound(largeCount);
+  };
+
+  const handleStart = () => {
+    registerUserGesture();
+    setHasStarted(true);
     if (!welcomeSpokenRef.current) {
       announce("Welcome to Challenge Acer. Can you beat him? Choose how many large numbers and let's go.");
       welcomeSpokenRef.current = true;
     }
-    void revealRound(largeCount);
   };
 
   const handleClearHistory = () => {
@@ -681,6 +686,17 @@ export default function AcerChallengeGame() {
 
   return (
     <>
+      {!hasStarted ? (
+        <div className="startOverlay">
+          <div className="startOverlayCard">
+            <h2>Acer Challenge</h2>
+            <p className="muted">Tap Start for voice and sound</p>
+            <button type="button" onClick={handleStart}>
+              Start
+            </button>
+          </div>
+        </div>
+      ) : null}
       <div className="topbar">
         <div>
           <h1>Acer Challenge</h1>
@@ -722,9 +738,6 @@ export default function AcerChallengeGame() {
           <div className="rowRight">
             <button id="newRoundBtn" onClick={() => revealRoundWithInput(largeCount)}>
               Reveal round
-            </button>
-            <button id="startTimerBtn" className="btnDanger" disabled>
-              Start timer
             </button>
             <button id="backBtn" className="btnGhost" disabled={!canBack} onClick={handleBack}>
               Back
