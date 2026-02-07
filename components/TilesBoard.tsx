@@ -9,6 +9,8 @@ interface TilesBoardProps {
   canPickOperator: boolean;
   pendingOp: '+' | '-' | '*' | '/' | null;
   onOperation: (op: '+' | '-' | '*' | '/') => void;
+  canLockIn: boolean;
+  onLockIn: () => void;
 }
 
 export default function TilesBoard({
@@ -19,7 +21,9 @@ export default function TilesBoard({
   hint,
   canPickOperator,
   pendingOp,
-  onOperation
+  onOperation,
+  canLockIn,
+  onLockIn
 }: TilesBoardProps) {
   return (
     <div className="tilesWrap">
@@ -78,6 +82,12 @@ export default function TilesBoard({
           onClick={() => onOperation('/')}
         >
           ÷
+        </button>
+      </div>
+
+      <div className="rowRight" style={{ justifyContent: 'center', marginTop: 10 }}>
+        <button id="lockInBtn" className="btnGhost" disabled={!canLockIn} onClick={onLockIn}>
+          Lock in your answer
         </button>
       </div>
 

@@ -745,9 +745,6 @@ export default function AcerChallengeGame() {
             <button id="resetWorkBtn" className="btnGhost" disabled={!canReset} onClick={handleReset}>
               Reset work
             </button>
-            <button id="lockInBtn" className="btnGhost" disabled={!canLockIn} onClick={lockInAnswer}>
-              Lock in your answer
-            </button>
           </div>
         </div>
 
@@ -764,6 +761,8 @@ export default function AcerChallengeGame() {
               canPickOperator={canPickOperator}
               pendingOp={pendingOp}
               onOperation={handleOperation}
+              canLockIn={canLockIn}
+              onLockIn={lockInAnswer}
             />
 
             <div className="box">
