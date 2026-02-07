@@ -20,6 +20,8 @@ export interface HistoryItem {
   bestFinalValue: number | null;
   bestSteps: string[];
   points: number;
+  didSubmit?: boolean;
+  outcome?: 'OK' | 'FAIL';
 }
 
 export interface BestSolution {

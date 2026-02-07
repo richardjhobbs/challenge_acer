@@ -456,6 +456,55 @@ export default function AcerChallengeGame() {
     []
   );
 
+  const endRound = useCallback(
+    (options: {
+      didSubmit: boolean;
+      userFinalValue: number | null;
+      points: number;
+      feedbackMessage: string;
+      exact: boolean;
+    }) => {
+      stopTimer();
+      clearAutoStartTimer();
+      setPhase('ENDED');
+      setFeedback({ tone: options.didSubmit ? 'good' : 'bad', message: options.feedbackMessage });
+
+      if (target === null) {
+        handleEndOfRoundEffects(options.exact);
+        return;
+      }
+
+      const best = computeBest(tilesAtStart.length ? tilesAtStart : tiles, target);
+      const outcome = options.didSubmit ? 'OK' : 'FAIL';
+
+      saveHistory({
+        ts: Date.now(),
+        tilesAtStart: tilesAtStart.map((tile) => tile.value),
+        target,
+        userFinalValue: options.userFinalValue,
+        userSteps: workLines.slice(),
+        bestFinalValue: best ? best.value : null,
+        bestSteps: best ? best.steps : [],
+        points: options.points,
+        didSubmit: options.didSubmit,
+        outcome
+      });
+
+      setHistoryItems(loadHistory());
+      handleEndOfRoundEffects(options.exact);
+    },
+    [
+      clearAutoStartTimer,
+      computeBest,
+      handleEndOfRoundEffects,
+      stopTimer,
+      target,
+      tiles,
+      tilesAtStart,
+      workLines
+    ]
+  );
+
   const lockInAnswer = () => {
     registerUserGesture();
     if (!canLockIn || target === null) return;
@@ -463,55 +512,27 @@ export default function AcerChallengeGame() {
     if (!selected) return;
 
     setLockedId(selected.id);
-    stopTimer();
-    clearAutoStartTimer();
-    setPhase('ENDED');
-
     const diff = Math.abs(target - selected.value);
     const points = scoreForDiff(diff);
-    const best = computeBest(tilesAtStart.length ? tilesAtStart : tiles, target);
-    handleEndOfRoundEffects(diff === 0);
 
-    setFeedback({
-      tone: 'good',
-      message: `Locked in. Value: ${selected.value}, diff: ${diff}, points: ${points}`
-    });
-
-    saveHistory({
-      ts: Date.now(),
-      tilesAtStart: tilesAtStart.map((tile) => tile.value),
-      target,
+    endRound({
+      didSubmit: true,
       userFinalValue: selected.value,
-      userSteps: workLines.slice(),
-      bestFinalValue: best ? best.value : null,
-      bestSteps: best ? best.steps : [],
-      points
+      points,
+      feedbackMessage: `Locked in. Value: ${selected.value}, diff: ${diff}, points: ${points}`,
+      exact: diff === 0
     });
-
-    setHistoryItems(loadHistory());
   };
 
   const handleTimeUp = useCallback(() => {
-    stopTimer();
-    clearAutoStartTimer();
-    setPhase('ENDED');
-    setFeedback({ tone: 'bad', message: 'Time.' });
-    if (target !== null) {
-      const best = computeBest(tilesAtStart.length ? tilesAtStart : tiles, target);
-      saveHistory({
-        ts: Date.now(),
-        tilesAtStart: tilesAtStart.map((tile) => tile.value),
-        target,
-        userFinalValue: null,
-        userSteps: workLines.slice(),
-        bestFinalValue: best ? best.value : null,
-        bestSteps: best ? best.steps : [],
-        points: 0
-      });
-      setHistoryItems(loadHistory());
-    }
-    handleEndOfRoundEffects(false);
-  }, [clearAutoStartTimer, computeBest, handleEndOfRoundEffects, stopTimer, target, tiles, tilesAtStart, workLines]);
+    endRound({
+      didSubmit: false,
+      userFinalValue: null,
+      points: 0,
+      feedbackMessage: 'FAIL!',
+      exact: false
+    });
+  }, [endRound]);
 
   const startTimer = () => {
     if (phaseRef.current !== 'READY') return;

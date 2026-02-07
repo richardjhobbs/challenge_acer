@@ -166,6 +166,56 @@ button:disabled{ opacity:.55; cursor:not-allowed; }
   .tile{ flex: 0 0 auto; }
 }
 
+@media (max-width: 420px){
+  .box{
+    padding: 10px;
+    min-height: 96px;
+  }
+  .tilesWrap{
+    padding: 10px;
+  }
+  .led{
+    height: 54px;
+    padding: 8px 10px;
+  }
+  .led span{ font-size: 28px; }
+  .calc{
+    height: 54px;
+    padding: 8px 10px;
+    gap: 6px;
+  }
+  .calcDigit{
+    width: 34px;
+    height: 38px;
+    font-size: 28px;
+  }
+  .tileRow{
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    justify-items: center;
+    overflow: hidden;
+  }
+  .tile{
+    width: 60px;
+    height: 60px;
+  }
+  .opsBar{ gap: 8px; }
+  .opBtn{
+    width: 44px;
+    height: 38px;
+    font-size: 16px;
+  }
+  .lockBtn{
+    width: 100%;
+    padding: 8px 10px;
+  }
+  table{
+    display: block;
+    overflow-x: auto;
+  }
+}
+
 .box{
   border: 1px solid var(--line);
   border-radius: 14px;
@@ -234,6 +284,7 @@ button:disabled{ opacity:.55; cursor:not-allowed; }
   background: rgba(0,0,0,.12);
   padding: 14px;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
+  max-width: 100%;
 }
 
 .tileRow{

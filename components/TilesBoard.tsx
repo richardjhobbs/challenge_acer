@@ -86,7 +86,7 @@ export default function TilesBoard({
       </div>
 
       <div className="rowRight" style={{ justifyContent: 'center', marginTop: 10 }}>
-        <button id="lockInBtn" className="btnGhost" disabled={!canLockIn} onClick={onLockIn}>
+        <button id="lockInBtn" className="btnGhost lockBtn" disabled={!canLockIn} onClick={onLockIn}>
           Lock in your answer
         </button>
       </div>
