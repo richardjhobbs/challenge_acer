@@ -34,28 +34,31 @@ export default function HistoryTable({ items, onClear }: HistoryTableProps) {
             {items
               .slice()
               .reverse()
-              .map((item) => (
-                <tr key={item.ts}>
-                  <td>{new Date(item.ts).toLocaleString()}</td>
-                  <td className="mono">{item.tilesAtStart.join(', ')}</td>
-                  <td>{item.target}</td>
-                  <td>{item.userFinalValue ?? ''}</td>
-                  <td>
-                    {item.userSteps.length ? (
-                      <details>
-                        <summary>View steps</summary>
-                        <div className="mono" style={{ whiteSpace: 'pre-wrap', marginTop: 8 }}>
-                          {item.userSteps.join('\n')}
-                        </div>
-                      </details>
-                    ) : (
-                      <span className="muted">—</span>
-                    )}
-                  </td>
-                  <td>{item.bestFinalValue ?? ''}</td>
-                  <td>{item.points}</td>
-                </tr>
-              ))}
+              .map((item) => {
+                const isExact = item.userFinalValue !== null && item.userFinalValue === item.target;
+                return (
+                  <tr key={item.ts} className={isExact ? 'exactRow' : undefined}>
+                    <td>{new Date(item.ts).toLocaleString()}</td>
+                    <td className="mono">{item.tilesAtStart.join(', ')}</td>
+                    <td>{item.target}</td>
+                    <td className={isExact ? 'exactValue' : undefined}>{item.userFinalValue ?? ''}</td>
+                    <td>
+                      {item.userSteps.length ? (
+                        <details>
+                          <summary>View steps</summary>
+                          <div className="mono" style={{ whiteSpace: 'pre-wrap', marginTop: 8 }}>
+                            {item.userSteps.join('\n')}
+                          </div>
+                        </details>
+                      ) : (
+                        <span className="muted">—</span>
+                      )}
+                    </td>
+                    <td>{item.bestFinalValue ?? ''}</td>
+                    <td>{item.points}</td>
+                  </tr>
+                );
+              })}
           </tbody>
         </table>
       )}

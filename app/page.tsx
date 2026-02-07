@@ -7,7 +7,7 @@ export default function LandingPage() {
         <div>
           <h1>Acer Challenge</h1>
           <div className="muted">
-            Pick your numbers, reveal the tiles, reveal the target, then start the clock when you are ready.
+            Pick your numbers, reveal the tiles, reveal the target, then the clock auto-starts after 10 seconds.
           </div>
         </div>
         <div className="muted">Solo or online play coming soon.</div>

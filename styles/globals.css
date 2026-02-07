@@ -72,6 +72,11 @@ select, input, button{
   outline: none;
 }
 
+select option{
+  color: #111;
+  background: #fff;
+}
+
 input[disabled]{ opacity:.7; cursor:not-allowed; }
 
 button{
@@ -305,8 +310,8 @@ button:disabled{ opacity:.55; cursor:not-allowed; }
   padding: 10px 12px;
   min-height: 230px;
   overflow:auto;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-  font-size: 13px;
+  font-family: "Segoe Print", "Bradley Hand", "Comic Sans MS", "Marker Felt", cursive;
+  font-size: 18px;
   line-height: 1.45;
   white-space: pre-wrap;
 }
@@ -322,6 +327,15 @@ table{ width:100%; border-collapse: collapse; }
 th, td{ padding: 10px 8px; border-bottom: 1px solid rgba(255,255,255,.10); font-size: 13px; }
 
 th{ color: var(--muted); text-align:left; font-weight: 700; }
+
+.exactRow td{
+  background: rgba(255, 77, 109, 0.12);
+}
+
+.exactValue{
+  color: var(--danger);
+  font-weight: 700;
+}
 
 details{
   border: 1px solid var(--line);

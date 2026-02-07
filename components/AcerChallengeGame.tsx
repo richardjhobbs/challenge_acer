@@ -51,16 +51,25 @@ export default function AcerChallengeGame() {
   const [timerMode, setTimerMode] = useState(30);
   const [largeCount, setLargeCount] = useState(1);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
-  const [timerHint, setTimerHint] = useState('Timer does not start automatically.');
+  const [timerHint, setTimerHint] = useState('Timer starts automatically after the target reveal.');
   const [feedback, setFeedback] = useState<{ tone: 'good' | 'bad' | 'muted'; message: string } | null>(null);
   const [bestAnswer, setBestAnswer] = useState<BestSolution | null>(null);
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
   const [speechNote, setSpeechNote] = useState<string | null>(null);
   const [voice, setVoice] = useState<SpeechSynthesisVoice | null>(null);
+  const [typedBestSteps, setTypedBestSteps] = useState('');
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const preTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const typingRef = useRef<NodeJS.Timeout | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
   const rafRef = useRef<number | null>(null);
   const revealAbortRef = useRef(false);
+  const hasUserGestureRef = useRef(false);
+  const welcomeSpokenRef = useRef(false);
+  const phaseRef = useRef<GamePhase>(phase);
+  const lockedIdRef = useRef<string | null>(null);
+  const preTimerCancelledRef = useRef(false);
 
   const isRevealing = phase === 'REVEALING_TILES';
   const isTargetRolling = phase === 'TARGET_ROLLING';
@@ -140,6 +149,107 @@ export default function AcerChallengeGame() {
     }
   }, []);
 
+  const clearPreTimer = useCallback(() => {
+    if (preTimerRef.current) {
+      clearTimeout(preTimerRef.current);
+      preTimerRef.current = null;
+    }
+    preTimerCancelledRef.current = true;
+  }, []);
+
+  const registerUserGesture = useCallback(() => {
+    hasUserGestureRef.current = true;
+    if (audioContextRef.current?.state === 'suspended') {
+      void audioContextRef.current.resume().catch(() => {});
+    }
+  }, []);
+
+  const getAudioContext = useCallback((): AudioContext | null => {
+    if (typeof window === 'undefined') return null;
+    if (!hasUserGestureRef.current) return null;
+    if (audioContextRef.current) return audioContextRef.current;
+    const AudioContextCtor =
+      window.AudioContext ?? (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextCtor) return null;
+    try {
+      const context = new AudioContextCtor();
+      audioContextRef.current = context;
+      if (context.state === 'suspended') {
+        void context.resume().catch(() => {});
+      }
+      return context;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const playTone = useCallback(
+    (options: { type: OscillatorType; frequency: number; duration: number; peak: number }) => {
+      const context = getAudioContext();
+      if (!context) return;
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      oscillator.type = options.type;
+      oscillator.frequency.value = options.frequency;
+      gain.gain.value = 0;
+      oscillator.connect(gain);
+      gain.connect(context.destination);
+      const now = context.currentTime;
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(options.peak, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + options.duration);
+      oscillator.start(now);
+      oscillator.stop(now + options.duration + 0.05);
+    },
+    [getAudioContext]
+  );
+
+  const playBuzzer = useCallback(() => {
+    playTone({ type: 'sawtooth', frequency: 180, duration: 0.4, peak: 0.2 });
+  }, [playTone]);
+
+  const playBoom = useCallback(() => {
+    playTone({ type: 'sine', frequency: 70, duration: 0.5, peak: 0.25 });
+  }, [playTone]);
+
+  const handleEndOfRoundEffects = useCallback(
+    (exact: boolean) => {
+      if (!hasUserGestureRef.current) return;
+      playBuzzer();
+      setTimeout(() => {
+        announce("Let's see how you did");
+      }, 450);
+      if (exact) {
+        setTimeout(() => {
+          playBoom();
+        }, 1200);
+      }
+    },
+    [announce, playBoom, playBuzzer]
+  );
+
+  useEffect(() => {
+    if (typingRef.current) {
+      clearInterval(typingRef.current);
+      typingRef.current = null;
+    }
+    if (!bestAnswer) {
+      setTypedBestSteps('');
+      return;
+    }
+    const fullText = bestAnswer.steps.length ? bestAnswer.steps.join('\n') : '—';
+    setTypedBestSteps('');
+    let index = 0;
+    typingRef.current = setInterval(() => {
+      index += 1;
+      setTypedBestSteps(fullText.slice(0, index));
+      if (index >= fullText.length && typingRef.current) {
+        clearInterval(typingRef.current);
+        typingRef.current = null;
+      }
+    }, 200);
+  }, [bestAnswer]);
+
   useEffect(() => {
     setHistoryItems(loadHistory());
     if (!isSpeechSupported()) {
@@ -167,8 +277,24 @@ export default function AcerChallengeGame() {
     };
   }, []);
 
+  useEffect(() => {
+    phaseRef.current = phase;
+  }, [phase]);
+
+  useEffect(() => {
+    lockedIdRef.current = lockedId;
+  }, [lockedId]);
+
   useEffect(() => () => {
     stopTimer();
+    if (preTimerRef.current) {
+      clearTimeout(preTimerRef.current);
+      preTimerRef.current = null;
+    }
+    if (typingRef.current) {
+      clearInterval(typingRef.current);
+      typingRef.current = null;
+    }
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     revealAbortRef.current = true;
   }, [stopTimer]);
@@ -246,6 +372,7 @@ export default function AcerChallengeGame() {
   );
 
   const handleTileClick = (id: string) => {
+    registerUserGesture();
     if (!roundActive || isRevealing || isTargetRolling) return;
     const tile = tiles.find((item) => item.id === id);
     if (!tile || !tile.revealed) return;
@@ -270,12 +397,14 @@ export default function AcerChallengeGame() {
   };
 
   const handleOperation = (op: Operation) => {
+    registerUserGesture();
     if (!canPickOperator) return;
     setPendingOp(op);
     setPendingSecondId(null);
   };
 
   const handleBack = () => {
+    registerUserGesture();
     if (!canBack) return;
     if (pendingFirstId && !pendingOp) {
       setPendingFirstId(null);
@@ -304,8 +433,10 @@ export default function AcerChallengeGame() {
   };
 
   const handleReset = () => {
+    registerUserGesture();
     if (!canReset) return;
     if (!tilesAtStart.length) return;
+    clearPreTimer();
     setTiles(tilesAtStart.map((tile) => ({ ...tile, revealed: true })));
     setWorkLines([]);
     setAppliedSteps([]);
@@ -326,17 +457,20 @@ export default function AcerChallengeGame() {
   );
 
   const lockInAnswer = () => {
+    registerUserGesture();
     if (!canLockIn || target === null) return;
     const selected = tiles.find((tile) => tile.id === pendingFirstId);
     if (!selected) return;
 
     setLockedId(selected.id);
     stopTimer();
+    clearPreTimer();
     setPhase('ENDED');
 
     const diff = Math.abs(target - selected.value);
     const points = scoreForDiff(diff);
     const best = computeBest(tilesAtStart.length ? tilesAtStart : tiles, target);
+    handleEndOfRoundEffects(diff === 0);
 
     setFeedback({
       tone: 'good',
@@ -359,12 +493,25 @@ export default function AcerChallengeGame() {
 
   const handleTimeUp = useCallback(() => {
     stopTimer();
+    clearPreTimer();
     setPhase('ENDED');
     setFeedback({ tone: 'bad', message: 'Time.' });
     if (target !== null) {
-      computeBest(tilesAtStart.length ? tilesAtStart : tiles, target);
+      const best = computeBest(tilesAtStart.length ? tilesAtStart : tiles, target);
+      saveHistory({
+        ts: Date.now(),
+        tilesAtStart: tilesAtStart.map((tile) => tile.value),
+        target,
+        userFinalValue: null,
+        userSteps: workLines.slice(),
+        bestFinalValue: best ? best.value : null,
+        bestSteps: best ? best.steps : [],
+        points: 0
+      });
+      setHistoryItems(loadHistory());
     }
-  }, [computeBest, stopTimer, target, tiles, tilesAtStart]);
+    handleEndOfRoundEffects(false);
+  }, [clearPreTimer, computeBest, handleEndOfRoundEffects, stopTimer, target, tiles, tilesAtStart, workLines]);
 
   const startTimer = () => {
     if (!canStartTimer) return;
@@ -457,14 +604,13 @@ export default function AcerChallengeGame() {
     if (isRevealing || isTargetRolling) return;
     revealAbortRef.current = false;
 
-    announce("Select how many large numbers and let’s go");
-
     const smallCount = 6 - largeCount;
     announce(`That’s ${largeCount} large and ${smallCount} small numbers`);
 
     stopTimer();
+    clearPreTimer();
     setTimeRemaining(null);
-    setTimerHint('Timer does not start automatically.');
+    setTimerHint('Timer starts automatically after the target reveal.');
     setFeedback(null);
     setBestAnswer(null);
     setPendingFirstId(null);
@@ -492,10 +638,24 @@ export default function AcerChallengeGame() {
     announce('And the number is');
     const finalTarget = await rollTargetAndFix();
     announce(String(finalTarget));
-    setTargetHint('Press Start timer when you are ready.');
+    announce('Timer starts in 10 seconds');
+    setTimerHint('Timer starts in 10 seconds.');
+    setTargetHint('Timer starts automatically after the reveal.');
+    preTimerCancelledRef.current = false;
+    if (preTimerRef.current) clearTimeout(preTimerRef.current);
+    preTimerRef.current = setTimeout(() => {
+      if (preTimerCancelledRef.current) return;
+      if (phaseRef.current === 'ENDED' || lockedIdRef.current) return;
+      startTimer();
+    }, 10000);
   };
 
   const revealRoundWithInput = (largeCount: number) => {
+    registerUserGesture();
+    if (!welcomeSpokenRef.current) {
+      announce("Welcome to Challenge Acer. Can you beat him? Choose how many large numbers and let's go.");
+      welcomeSpokenRef.current = true;
+    }
     void revealRound(largeCount);
   };
 
@@ -512,7 +672,7 @@ export default function AcerChallengeGame() {
       <div style={{ height: 8 }} />
       <div className="muted">Steps:</div>
       <div className="mono" style={{ whiteSpace: 'pre-wrap' }}>
-        {bestAnswer.steps.length ? bestAnswer.steps.join('\n') : '—'}
+        {typedBestSteps}
       </div>
     </>
   ) : (
@@ -525,7 +685,7 @@ export default function AcerChallengeGame() {
         <div>
           <h1>Acer Challenge</h1>
           <div className="muted">
-            Pick your numbers, reveal the tiles, reveal the target, then start the clock when you are ready.
+            Pick your numbers, reveal the tiles, reveal the target, then the clock auto-starts after 10 seconds.
           </div>
         </div>
         <div className="muted">
@@ -563,7 +723,7 @@ export default function AcerChallengeGame() {
             <button id="newRoundBtn" onClick={() => revealRoundWithInput(largeCount)}>
               Reveal round
             </button>
-            <button id="startTimerBtn" className="btnDanger" disabled={!canStartTimer} onClick={startTimer}>
+            <button id="startTimerBtn" className="btnDanger" disabled>
               Start timer
             </button>
             <button id="backBtn" className="btnGhost" disabled={!canBack} onClick={handleBack}>
@@ -573,7 +733,7 @@ export default function AcerChallengeGame() {
               Reset work
             </button>
             <button id="lockInBtn" className="btnGhost" disabled={!canLockIn} onClick={lockInAnswer}>
-              Lock in selected tile
+              Lock in your answer
             </button>
           </div>
         </div>

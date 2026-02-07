@@ -17,10 +17,11 @@ export default function HowToPlay() {
           <b>Constraints:</b> intermediate results must be positive integers, division must be exact, no concatenation.
         </div>
         <div>
-          <b>Timer:</b> when you are ready, press <b>Start timer</b>. Choose 30s, 60s, or Unlimited.
+          <b>Timer:</b> after the target is revealed, the timer announces and auto-starts after 10 seconds. Choose 30s,
+          60s, or Unlimited.
         </div>
         <div>
-          <b>Finish:</b> select the tile you want as your final answer, then press <b>Lock in selected tile</b>.
+          <b>Finish:</b> select the tile you want as your final answer, then press <b>Lock in your answer</b>.
         </div>
         <div>
           <b>Scoring:</b> exact match 10 points, 1–5 away 7 points, 6–10 away 5 points, otherwise 0.
