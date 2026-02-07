@@ -1,6 +1,6 @@
 import type { HistoryItem } from './types';
 
-const HISTORY_KEY = 'acer_challenge_history_v1';
+const HISTORY_KEY = 'acer_challenge_history_v2';
 
 export function loadHistory(): HistoryItem[] {
   if (typeof window === 'undefined') return [];

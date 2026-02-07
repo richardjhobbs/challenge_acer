@@ -6,7 +6,8 @@ interface TilesBoardProps {
   lockedId: string | null;
   onTileClick: (id: string) => void;
   hint: string;
-  canOperate: boolean;
+  canPickOperator: boolean;
+  pendingOp: '+' | '-' | '*' | '/' | null;
   onOperation: (op: '+' | '-' | '*' | '/') => void;
 }
 
@@ -16,7 +17,8 @@ export default function TilesBoard({
   lockedId,
   onTileClick,
   hint,
-  canOperate,
+  canPickOperator,
+  pendingOp,
   onOperation
 }: TilesBoardProps) {
   return (
@@ -45,16 +47,38 @@ export default function TilesBoard({
       </div>
 
       <div className="opsBar">
-        <button className="opBtn" data-op="+" disabled={!canOperate} onClick={() => onOperation('+')}>
+        <button
+          className={`opBtn${pendingOp === '+' ? ' active' : ''}`}
+          data-op="+"
+          disabled={!canPickOperator}
+          onClick={() => onOperation('+')}
+        >
           +
         </button>
-        <button className="opBtn" data-op="-" disabled={!canOperate} onClick={() => onOperation('-')}>
+        <button
+          className={`opBtn${pendingOp === '-' ? ' active' : ''}`}
+          data-op="-"
+          disabled={!canPickOperator}
+          onClick={() => onOperation('-')}
+        >
           -
         </button>
-        <button className="opBtn" data-op="*" disabled={!canOperate} onClick={() => onOperation('*')}>
+        <button
+          className={`opBtn${pendingOp === '*' ? ' active' : ''}`}
+          data-op="*"
+          disabled={!canPickOperator}
+          onClick={() => onOperation('*')}
+        >
           ×
         </button>
-        <button className="opBtn" data-op="/" disabled={!canOperate} onClick={() => onOperation('/')}>÷</button>
+        <button
+          className={`opBtn${pendingOp === '/' ? ' active' : ''}`}
+          data-op="/"
+          disabled={!canPickOperator}
+          onClick={() => onOperation('/')}
+        >
+          ÷
+        </button>
       </div>
 
       <div className="smallNote" style={{ textAlign: 'center' }}>

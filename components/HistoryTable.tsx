@@ -25,6 +25,7 @@ export default function HistoryTable({ items, onClear }: HistoryTableProps) {
               <th>Tiles</th>
               <th>Target</th>
               <th>Your value</th>
+              <th>Your steps</th>
               <th>Best</th>
               <th>Points</th>
             </tr>
@@ -36,10 +37,22 @@ export default function HistoryTable({ items, onClear }: HistoryTableProps) {
               .map((item) => (
                 <tr key={item.ts}>
                   <td>{new Date(item.ts).toLocaleString()}</td>
-                  <td className="mono">{item.tiles.join(', ')}</td>
+                  <td className="mono">{item.tilesAtStart.join(', ')}</td>
                   <td>{item.target}</td>
-                  <td>{item.userValue ?? ''}</td>
-                  <td>{item.bestValue ?? ''}</td>
+                  <td>{item.userFinalValue ?? ''}</td>
+                  <td>
+                    {item.userSteps.length ? (
+                      <details>
+                        <summary>View steps</summary>
+                        <div className="mono" style={{ whiteSpace: 'pre-wrap', marginTop: 8 }}>
+                          {item.userSteps.join('\n')}
+                        </div>
+                      </details>
+                    ) : (
+                      <span className="muted">—</span>
+                    )}
+                  </td>
+                  <td>{item.bestFinalValue ?? ''}</td>
                   <td>{item.points}</td>
                 </tr>
               ))}
