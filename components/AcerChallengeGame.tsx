@@ -668,6 +668,7 @@ export default function AcerChallengeGame() {
     announce('And the number is');
     const finalTarget = await rollTargetAndFix();
     announce(String(finalTarget));
+    setPhase('READY');
     announce('Timer starts in 10 seconds');
     setTimerHint('Timer starts in 10 seconds.');
     setTargetHint('Timer starts automatically after the reveal.');
