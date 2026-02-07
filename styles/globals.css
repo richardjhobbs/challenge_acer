@@ -147,6 +147,58 @@ button:disabled{ opacity:.55; cursor:not-allowed; }
   .tileRow{ flex-wrap:wrap; }
 }
 
+@media (max-width: 768px){
+  .controls{
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .arena{
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .displayRow{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "target timer"
+      "tiles tiles";
+    gap: 10px;
+  }
+
+  .targetBox{ grid-area: target; }
+  .timerBox{ grid-area: timer; }
+  .tilesWrap{
+    grid-area: tiles;
+    padding: 10px;
+  }
+
+  .tileRow{ gap: 6px; }
+  .tile{
+    width: 58px;
+    height: 58px;
+  }
+
+  .opBtn{
+    width: 46px;
+    height: 40px;
+    font-size: 16px;
+  }
+
+  .lockBtn{
+    flex: 1 1 100%;
+    min-width: 200px;
+  }
+
+  .statusRow{ gap: 10px; }
+  .statusBox{ padding: 12px; }
+
+  .workArea{
+    min-height: 140px;
+    max-height: 200px;
+  }
+}
+
 .box{
   border: 1px solid var(--line);
   border-radius: 14px;

@@ -118,6 +118,7 @@ export default function AcerChallengeGame() {
 
   const announce = useCallback(
     (text: string) => {
+      if (!hasUserGestureRef.current) return;
       if (!isSpeechSupported()) return;
       speakText(text, voice);
     },
@@ -126,6 +127,7 @@ export default function AcerChallengeGame() {
 
   const announceCountdown = useCallback(
     (text: string) => {
+      if (!hasUserGestureRef.current) return;
       if (!isSpeechSupported()) return;
       speakText(text, voice, { interrupt: true });
     },
@@ -213,9 +215,11 @@ export default function AcerChallengeGame() {
   }, [playTone]);
 
   const handleEndOfRoundEffects = useCallback(
-    (exact: boolean) => {
+    (exact: boolean, options?: { skipBuzzer?: boolean }) => {
       if (!hasUserGestureRef.current) return;
-      playBuzzer();
+      if (!options?.skipBuzzer) {
+        playBuzzer();
+      }
       setTimeout(() => {
         announce("Let's see how you did");
       }, 450);
@@ -510,8 +514,19 @@ export default function AcerChallengeGame() {
       });
       setHistoryItems(loadHistory());
     }
-    handleEndOfRoundEffects(false);
-  }, [clearAutoStartTimer, computeBest, handleEndOfRoundEffects, stopTimer, target, tiles, tilesAtStart, workLines]);
+    playBuzzer();
+    handleEndOfRoundEffects(false, { skipBuzzer: true });
+  }, [
+    clearAutoStartTimer,
+    computeBest,
+    handleEndOfRoundEffects,
+    playBuzzer,
+    stopTimer,
+    target,
+    tiles,
+    tilesAtStart,
+    workLines
+  ]);
 
   const startTimer = () => {
     if (phaseRef.current !== 'READY') return;
@@ -745,9 +760,6 @@ export default function AcerChallengeGame() {
             <button id="resetWorkBtn" className="btnGhost" disabled={!canReset} onClick={handleReset}>
               Reset work
             </button>
-            <button id="lockInBtn" className="btnGhost" disabled={!canLockIn} onClick={lockInAnswer}>
-              Lock in your answer
-            </button>
           </div>
         </div>
 
@@ -764,9 +776,11 @@ export default function AcerChallengeGame() {
               canPickOperator={canPickOperator}
               pendingOp={pendingOp}
               onOperation={handleOperation}
+              canLockIn={canLockIn}
+              onLockIn={lockInAnswer}
             />
 
-            <div className="box">
+            <div className="box timerBox">
               <div className="muted">Time</div>
               <div className="led">
                 <span>{timeDisplay}</span>
