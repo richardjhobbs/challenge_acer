@@ -1,7 +1,8 @@
 import '../styles/globals.css';
+import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Acer Challenge',
   description: 'Pick your numbers, reveal the tiles, reveal the target, then the clock auto-starts after 10 seconds.',
   icons: {
@@ -10,7 +11,7 @@ export const metadata = {
       { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
       { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' }
     ],
-    apple: '/apple-touch-icon.png'
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180' }]
   }
 };
 
