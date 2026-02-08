@@ -821,12 +821,21 @@ export default function AcerChallengeGame() {
               <div>Your answer: {resultAnswerText} , Points scored: {resultPointsText}</div>
               <div style={{ height: 10 }} />
               <div style={{ fontWeight: 800 }}>The Best Answer:</div>
-              <div style={{ fontSize: '2em', fontWeight: 800 }}>
-                Is {bestAnswer ? bestAnswer.value : '---'}
-              </div>
-              <div style={{ height: 10 }} />
-              <div className="mono" style={{ whiteSpace: 'pre-wrap', fontSize: '2em' }}>
-                {bestAnswer ? typedBestSteps : '---'}
+              <div style={{ marginTop: 12 }}>
+                <div className="good" style={{ fontSize: '2em', fontWeight: 800 }}>
+                  {bestAnswer ? bestAnswer.value : '---'}
+                </div>
+
+                <div
+                  className="mono good"
+                  style={{
+                    whiteSpace: 'pre-wrap',
+                    fontSize: '2em',
+                    marginTop: 8,
+                  }}
+                >
+                  {bestAnswer ? typedBestSteps : '---'}
+                </div>
               </div>
             </div>
           </div>
