@@ -12,12 +12,6 @@ export default function LandingPage() {
         </div>
         <div className="topbarRight">
           <div className="muted">Solo or online play coming soon.</div>
-          <img
-            className="headerLogo"
-            src="/images/acer-can-winner-logo.png"
-            alt="Acer Challenge logo"
-            loading="eager"
-          />
         </div>
       </div>
 

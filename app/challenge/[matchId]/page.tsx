@@ -10,14 +10,6 @@ export default function MatchPage({ params }: MatchPageProps) {
           <h1>Acer Challenge</h1>
           <div className="muted">Match lobby placeholder.</div>
         </div>
-        <div className="topbarRight">
-          <img
-            className="headerLogo"
-            src="/images/acer-can-winner-logo.png"
-            alt="Acer Challenge logo"
-            loading="eager"
-          />
-        </div>
       </div>
       <section className="stage landing">
         <div className="placeholderBox">

@@ -727,14 +727,6 @@ export default function AcerChallengeGame() {
             Pick your numbers, reveal the tiles, reveal the target, then the clock auto-starts after 10 seconds.
           </div>
         </div>
-        <div className="topbarRight">
-          <img
-            className="headerLogo"
-            src="/images/acer-can-winner-logo.png"
-            alt="Acer Challenge logo"
-            loading="eager"
-          />
-        </div>
       </div>
 
       <div className="stage">
