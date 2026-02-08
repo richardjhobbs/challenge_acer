@@ -6,6 +6,7 @@ interface HistoryTableProps {
 }
 
 export default function HistoryTable({ items, onClear }: HistoryTableProps) {
+  const visibleItems = items.slice().reverse().slice(0, 10);
   return (
     <div className="statusBox">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
@@ -15,7 +16,7 @@ export default function HistoryTable({ items, onClear }: HistoryTableProps) {
         </button>
       </div>
       <div style={{ height: 10 }} />
-      {items.length === 0 ? (
+      {visibleItems.length === 0 ? (
         <div className="muted">No rounds yet.</div>
       ) : (
         <table>
@@ -32,37 +33,34 @@ export default function HistoryTable({ items, onClear }: HistoryTableProps) {
             </tr>
           </thead>
           <tbody>
-            {items
-              .slice()
-              .reverse()
-              .map((item) => {
-                const isExact = item.userFinalValue !== null && item.userFinalValue === item.target;
-                const didSubmit = item.didSubmit ?? true;
-                const outcome = item.outcome ?? (didSubmit ? 'OK' : 'FAIL');
-                return (
-                  <tr key={item.ts} className={isExact ? 'exactRow' : undefined}>
-                    <td>{new Date(item.ts).toLocaleString()}</td>
-                    <td className="mono">{item.tilesAtStart.join(', ')}</td>
-                    <td>{item.target}</td>
-                    <td className={isExact ? 'exactValue' : undefined}>{item.userFinalValue ?? ''}</td>
-                    <td className={outcome === 'FAIL' ? 'bad' : undefined}>{outcome}</td>
-                    <td>
-                      {item.userSteps.length ? (
-                        <details>
-                          <summary>View steps</summary>
-                          <div className="mono" style={{ whiteSpace: 'pre-wrap', marginTop: 8 }}>
-                            {item.userSteps.join('\n')}
-                          </div>
-                        </details>
-                      ) : (
-                        <span className="muted">—</span>
-                      )}
-                    </td>
-                    <td>{item.bestFinalValue ?? ''}</td>
-                    <td>{item.points}</td>
-                  </tr>
-                );
-              })}
+            {visibleItems.map((item) => {
+              const isExact = item.userFinalValue !== null && item.userFinalValue === item.target;
+              const didSubmit = item.didSubmit ?? true;
+              const outcome = item.outcome ?? (didSubmit ? 'OK' : 'FAIL');
+              return (
+                <tr key={item.ts} className={isExact ? 'exactRow' : undefined}>
+                  <td>{new Date(item.ts).toLocaleString()}</td>
+                  <td className="mono">{item.tilesAtStart.join(', ')}</td>
+                  <td>{item.target}</td>
+                  <td className={isExact ? 'exactValue' : undefined}>{item.userFinalValue ?? ''}</td>
+                  <td className={outcome === 'FAIL' ? 'bad' : undefined}>{outcome}</td>
+                  <td>
+                    {item.userSteps.length ? (
+                      <details>
+                        <summary>View steps</summary>
+                        <div className="mono" style={{ whiteSpace: 'pre-wrap', marginTop: 8 }}>
+                          {item.userSteps.join('\n')}
+                        </div>
+                      </details>
+                    ) : (
+                      <span className="muted">—</span>
+                    )}
+                  </td>
+                  <td>{item.bestFinalValue ?? ''}</td>
+                  <td>{item.points}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       )}

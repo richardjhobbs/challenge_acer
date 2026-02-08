@@ -9,7 +9,7 @@ import { applyOperation, scoreForDiff } from '@/lib/rules';
 import { computeBestSolution } from '@/lib/solver';
 import { clearHistory, loadHistory, saveHistory } from '@/lib/storage';
 import { createSeededRng, randInt, shuffle } from '@/lib/rng';
-import { getSpeechStatus, isSpeechSupported, pickVoice, speakText } from '@/lib/voice';
+import { isSpeechSupported, pickVoice, speakText } from '@/lib/voice';
 import type { BestSolution, GamePhase, HistoryItem, Operation, Tile } from '@/lib/types';
 
 const LARGE_POOL = [25, 50, 75, 100];
@@ -52,13 +52,16 @@ export default function AcerChallengeGame() {
   const [largeCount, setLargeCount] = useState(1);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [timerHint, setTimerHint] = useState('Timer starts automatically after the target reveal.');
-  const [feedback, setFeedback] = useState<{ tone: 'good' | 'bad' | 'muted'; message: string } | null>(null);
   const [bestAnswer, setBestAnswer] = useState<BestSolution | null>(null);
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
-  const [speechNote, setSpeechNote] = useState<string | null>(null);
   const [voice, setVoice] = useState<SpeechSynthesisVoice | null>(null);
   const [typedBestSteps, setTypedBestSteps] = useState('');
   const [hasStarted, setHasStarted] = useState(false);
+  const [roundResult, setRoundResult] = useState<{
+    didSubmit: boolean;
+    userFinalValue: number | null;
+    points: number;
+  } | null>(null);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const autoStartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -94,8 +97,6 @@ export default function AcerChallengeGame() {
     !isRevealing &&
     !isTargetRolling &&
     (pendingFirstId !== null || pendingOp !== null || appliedSteps.length > 0 || workLines.length > 0);
-  const roundStateText = phase === 'IDLE' ? 'Not started' : roundActive ? 'In play' : 'Round ended';
-
   const workMeta = roundActive ? `Tiles remaining: ${tiles.length}` : '';
 
   const pickHint = useMemo(() => {
@@ -259,22 +260,12 @@ export default function AcerChallengeGame() {
   useEffect(() => {
     setHistoryItems(loadHistory());
     if (!isSpeechSupported()) {
-      setSpeechNote('Speech synthesis not available in this browser.');
       return;
-    }
-    const status = getSpeechStatus();
-    if (!status.hasVoices) {
-      setSpeechNote('Speech voices are still loading. Try again shortly.');
     }
     const syncVoices = () => {
       const voices = window.speechSynthesis.getVoices();
       const picked = pickVoice(voices);
       setVoice(picked);
-      if (!picked) {
-        setSpeechNote('No English voice found. Speech will fall back silently.');
-      } else {
-        setSpeechNote(null);
-      }
     };
     syncVoices();
     window.speechSynthesis.onvoiceschanged = () => syncVoices();
@@ -367,14 +358,13 @@ export default function AcerChallengeGame() {
         setPendingOp(null);
         setPendingSecondId(null);
         setLockedId(null);
-        setFeedback({ tone: 'good', message: `OK ${result.expression}` });
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         setPendingSecondId(null);
-        setFeedback({ tone: 'bad', message: `Not allowed ${message}` });
+        announce(`Not allowed ${message}`);
       }
     },
-    [createTileId, pushAppliedStep, tiles, workLines]
+    [announce, createTileId, pushAppliedStep, tiles, workLines]
   );
 
   const handleTileClick = (id: string) => {
@@ -433,7 +423,6 @@ export default function AcerChallengeGame() {
       setPendingOp(null);
       setPendingSecondId(null);
       setLockedId(null);
-      setFeedback({ tone: 'muted', message: 'Back.' });
       return next;
     });
   };
@@ -450,7 +439,6 @@ export default function AcerChallengeGame() {
     setPendingOp(null);
     setPendingSecondId(null);
     setLockedId(null);
-    setFeedback({ tone: 'muted', message: 'Reset.' });
   };
 
   const computeBest = useCallback(
@@ -467,14 +455,17 @@ export default function AcerChallengeGame() {
       didSubmit: boolean;
       userFinalValue: number | null;
       points: number;
-      feedbackMessage: string;
       exact: boolean;
       skipBuzzer?: boolean;
     }) => {
       stopTimer();
       clearAutoStartTimer();
       setPhase('ENDED');
-      setFeedback({ tone: options.didSubmit ? 'good' : 'bad', message: options.feedbackMessage });
+      setRoundResult({
+        didSubmit: options.didSubmit,
+        userFinalValue: options.userFinalValue,
+        points: options.points
+      });
 
       if (target === null) {
         handleEndOfRoundEffects(options.exact, { skipBuzzer: options.skipBuzzer });
@@ -526,7 +517,6 @@ export default function AcerChallengeGame() {
       didSubmit: true,
       userFinalValue: selected.value,
       points,
-      feedbackMessage: `Locked in. Value: ${selected.value}, diff: ${diff}, points: ${points}`,
       exact: diff === 0
     });
   };
@@ -537,7 +527,6 @@ export default function AcerChallengeGame() {
       didSubmit: false,
       userFinalValue: null,
       points: 0,
-      feedbackMessage: 'FAIL!',
       exact: false,
       skipBuzzer: true
     });
@@ -641,8 +630,8 @@ export default function AcerChallengeGame() {
     clearAutoStartTimer();
     setTimeRemaining(null);
     setTimerHint('Timer starts automatically after the target reveal.');
-    setFeedback(null);
     setBestAnswer(null);
+    setRoundResult(null);
     setPendingFirstId(null);
     setPendingOp(null);
     setPendingSecondId(null);
@@ -713,20 +702,10 @@ export default function AcerChallengeGame() {
     setHistoryItems([]);
   };
 
-  const bestAnswerView = bestAnswer ? (
-    <>
-      <div>
-        <span className={bestAnswer.diff === 0 ? 'good' : ''}>Best: {bestAnswer.value}</span> (diff {bestAnswer.diff})
-      </div>
-      <div style={{ height: 8 }} />
-      <div className="muted">Steps:</div>
-      <div className="mono" style={{ whiteSpace: 'pre-wrap' }}>
-        {typedBestSteps}
-      </div>
-    </>
-  ) : (
-    '---'
-  );
+  const resultAnswerText =
+    roundResult === null ? '—' : roundResult.didSubmit ? String(roundResult.userFinalValue ?? '—') : 'FAIL!';
+  const resultPointsText =
+    roundResult === null ? '—' : roundResult.didSubmit ? String(roundResult.points) : '0';
 
   return (
     <>
@@ -747,10 +726,6 @@ export default function AcerChallengeGame() {
           <div className="muted">
             Pick your numbers, reveal the tiles, reveal the target, then the clock auto-starts after 10 seconds.
           </div>
-        </div>
-        <div className="muted">
-          Voice uses your browser voice list, best effort UK English female.
-          {speechNote ? ` ${speechNote}` : ''}
         </div>
       </div>
 
@@ -832,18 +807,19 @@ export default function AcerChallengeGame() {
 
             <div className="statusBox">
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                <b>Round result</b>
-                <span className="muted">{roundStateText}</span>
+                <b>Result of this round!</b>
               </div>
               <div style={{ height: 10 }} />
-              <div className="mono">
-                {feedback ? <span className={feedback.tone}>{feedback.message}</span> : null}
-              </div>
-              <div style={{ height: 12 }} />
-              <div style={{ fontWeight: 800 }}>Best answer (computed)</div>
-              <div className="muted">Shown after you lock in, or when time ends.</div>
+              <div>Your answer: {resultAnswerText} , Points scored: {resultPointsText}</div>
               <div style={{ height: 10 }} />
-              <div>{bestAnswerView}</div>
+              <div style={{ fontWeight: 800 }}>The Best Answer:</div>
+              <div style={{ fontSize: '2em', fontWeight: 800 }}>
+                Is {bestAnswer ? bestAnswer.value : '---'}
+              </div>
+              <div style={{ height: 10 }} />
+              <div className="mono" style={{ whiteSpace: 'pre-wrap', fontSize: '2em' }}>
+                {bestAnswer ? typedBestSteps : '---'}
+              </div>
             </div>
           </div>
 
