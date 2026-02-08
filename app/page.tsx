@@ -10,7 +10,15 @@ export default function LandingPage() {
             Pick your numbers, reveal the tiles, reveal the target, then the clock auto-starts after 10 seconds.
           </div>
         </div>
-        <div className="muted">Solo or online play coming soon.</div>
+        <div className="topbarRight">
+          <div className="muted">Solo or online play coming soon.</div>
+          <img
+            className="headerLogo"
+            src="/images/acer-can-winner-logo.png"
+            alt="Acer Challenge logo"
+            loading="eager"
+          />
+        </div>
       </div>
 
       <section className="stage landing">
