@@ -42,6 +42,18 @@ a{ color: inherit; text-decoration: none; }
   margin-bottom: 14px;
 }
 
+.topbarRight{
+  display:flex;
+  align-items:center;
+  gap: 12px;
+}
+
+.headerLogo{
+  height: 36px;
+  width: auto;
+  flex-shrink: 0;
+}
+
 .startOverlay{
   position: fixed;
   inset: 0;
@@ -160,6 +172,7 @@ button:disabled{ opacity:.55; cursor:not-allowed; }
 }
 
 @media (max-width: 900px){
+  .headerLogo{ height: 32px; }
   .displayRow{ grid-template-columns: 1fr !important; }
   .displayRow .targetBox,
   .displayRow .tilesWrap,
@@ -207,6 +220,10 @@ button:disabled{ opacity:.55; cursor:not-allowed; }
   .workArea{ min-height: 120px; max-height: 180px; font-size: 16px; }
 
   .statusRow{ grid-template-columns: 1fr; gap: 10px; }
+}
+
+@media (max-width: 480px){
+  .headerLogo{ height: 28px; }
 }
 
 @media (max-width: 420px){
