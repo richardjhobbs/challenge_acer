@@ -17,7 +17,12 @@ export const metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <a className="siteLogo" href="/" aria-label="Acer Challenge home">
+          <img src="/images/acer-can-winner-logo.png" alt="Acer Challenge" />
+        </a>
+        {children}
+      </body>
     </html>
   );
 }
